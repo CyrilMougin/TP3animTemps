@@ -1,5 +1,12 @@
 #version 330 core
 
+// Nom 1 : Olivier Perrault
+// CIP 1 : pero2102
+// Mat 1 : 16212377
+// Nom 2 : Cyril Mougin
+// CIP 2 : mouc2401
+// Mat 2 : 19108350	
+
 // Input vertex data, different for all executions of this shader.
 layout(location = 0) in vec3 vpm;
 layout(location = 1) in vec2 vertexUV;
@@ -46,6 +53,7 @@ void main(){
 	//x= x*cos(twist*y) + z*sin(twist*y);
 	//y= y;
 	//z= x*-sin(twist*y) + z*cos(twist*y);
+
 
 }
 

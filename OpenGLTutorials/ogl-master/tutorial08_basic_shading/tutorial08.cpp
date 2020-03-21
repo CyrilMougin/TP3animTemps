@@ -1,3 +1,11 @@
+//* Nom 1 : Olivier Perrault                                                         *
+//*	CIP 1 : pero2102
+//* Mat 1 : 16212377								        *
+//*																	*
+//* Nom 2 : Cyril Mougin                                                        *
+//*	CIP 2 :	mouc2401													        *
+//* Mat 2 : 19108350												*
+
 // Include standard headers
 #include <stdio.h>
 #include <stdlib.h>
