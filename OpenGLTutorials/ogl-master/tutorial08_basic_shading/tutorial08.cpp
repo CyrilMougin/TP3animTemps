@@ -22,7 +22,7 @@ using namespace std;
 #include <common/objloader.hpp>
 #include <common/vboindexer.hpp>
 
-struct Model
+struct Mesh
 {
 	GLuint vertbId = 0;
 	std::vector<glm::vec3> verts;
@@ -61,10 +61,10 @@ void unbindShader()
 }
 
 
-void initCube(Model& model)
+void initCube(Mesh& mesh)
 {
 	//model.verts = std::vector<glm::vec3>(24);
-	model.norms = std::vector<glm::vec3>(36);	
+	mesh.norms = std::vector<glm::vec3>(36);	
 
 	float x = 0.f;
 	float y = 0.f;
@@ -77,137 +77,137 @@ void initCube(Model& model)
 	float halfLenght = edgeLenght / 2;
 
 	// FRONT facet
-	model.verts.push_back(glm::vec3(-halfLenght, -halfLenght, halfLenght));
-	model.verts.push_back(glm::vec3(halfLenght, -halfLenght, halfLenght));
-	model.verts.push_back(glm::vec3(halfLenght, halfLenght, halfLenght));
-	model.verts.push_back(glm::vec3(-halfLenght, halfLenght, halfLenght));
-	model.verts.push_back(glm::vec3(halfLenght, halfLenght, halfLenght));
-	model.verts.push_back(glm::vec3(-halfLenght, -halfLenght, halfLenght));
-	for (int i = 0; i < 6; i++) model.norms[i] = glm::vec3(0, 0, 1);
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, halfLenght));
+	for (int i = 0; i < 6; i++) mesh.norms[i] = glm::vec3(0, 0, 1);
 
 	// RIGHT facet
-	model.verts.push_back(glm::vec3(halfLenght, halfLenght, halfLenght));
-	model.verts.push_back(glm::vec3(halfLenght, halfLenght, -halfLenght));
-	model.verts.push_back(glm::vec3(halfLenght, -halfLenght, -halfLenght));
-	model.verts.push_back(glm::vec3(halfLenght, halfLenght, halfLenght));
-	model.verts.push_back(glm::vec3(halfLenght, -halfLenght, -halfLenght));
-	model.verts.push_back(glm::vec3(halfLenght, -halfLenght, halfLenght));
-	for (int i = 6; i < 12; i++) model.norms[i] = glm::vec3(1, 0, 0);
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, halfLenght));
+	for (int i = 6; i < 12; i++) mesh.norms[i] = glm::vec3(1, 0, 0);
 
 	// BACK facet
-	model.verts.push_back(glm::vec3(-halfLenght, -halfLenght, -halfLenght));
-	model.verts.push_back(glm::vec3(halfLenght, -halfLenght, -halfLenght));
-	model.verts.push_back(glm::vec3(halfLenght, halfLenght, -halfLenght));
-	model.verts.push_back(glm::vec3(-halfLenght, -halfLenght, -halfLenght));
-	model.verts.push_back(glm::vec3(halfLenght, halfLenght, -halfLenght));
-	model.verts.push_back(glm::vec3(-halfLenght, halfLenght, -halfLenght));
-	for (int i = 12; i < 18; i++) model.norms[i] = glm::vec3(0, 0, 1);
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, halfLenght, -halfLenght));
+	for (int i = 12; i < 18; i++) mesh.norms[i] = glm::vec3(0, 0, 1);
 
 	// LEFT facet
-	model.verts.push_back(glm::vec3(-halfLenght, -halfLenght, -halfLenght));
-	model.verts.push_back(glm::vec3(-halfLenght, -halfLenght, halfLenght));
-	model.verts.push_back(glm::vec3(-halfLenght, halfLenght, halfLenght));
-	model.verts.push_back(glm::vec3(-halfLenght, -halfLenght, -halfLenght));
-	model.verts.push_back(glm::vec3(-halfLenght, halfLenght, halfLenght));
-	model.verts.push_back(glm::vec3(-halfLenght, halfLenght, -halfLenght));
-	for (int i = 18; i < 24; i++) model.norms[i] = glm::vec3(1, 0, 0);
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, halfLenght, -halfLenght));
+	for (int i = 18; i < 24; i++) mesh.norms[i] = glm::vec3(1, 0, 0);
 
 	// TOP facet
-	model.verts.push_back(glm::vec3(halfLenght, halfLenght, halfLenght));
-	model.verts.push_back(glm::vec3(-halfLenght, halfLenght, halfLenght));
-	model.verts.push_back(glm::vec3(halfLenght, halfLenght, -halfLenght));
-	model.verts.push_back(glm::vec3(-halfLenght, halfLenght, halfLenght));
-	model.verts.push_back(glm::vec3(halfLenght, halfLenght, -halfLenght));
-	model.verts.push_back(glm::vec3(-halfLenght, halfLenght, -halfLenght));
-	for (int i = 24; i < 30; i++) model.norms[i] = glm::vec3(0, 1, 0);
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, halfLenght, -halfLenght));
+	for (int i = 24; i < 30; i++) mesh.norms[i] = glm::vec3(0, 1, 0);
 
 	// BOTTOM facet
-	model.verts.push_back(glm::vec3(-halfLenght, -halfLenght, -halfLenght));
-	model.verts.push_back(glm::vec3(halfLenght, -halfLenght, -halfLenght));
-	model.verts.push_back(glm::vec3(-halfLenght, -halfLenght, halfLenght));
-	model.verts.push_back(glm::vec3(halfLenght, -halfLenght, -halfLenght));
-	model.verts.push_back(glm::vec3(-halfLenght, -halfLenght, halfLenght));
-	model.verts.push_back(glm::vec3(halfLenght, -halfLenght, halfLenght));
-	for (int i = 30; i < 36; i++) model.norms[i] = glm::vec3(0, 1, 0);
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, halfLenght));
+	for (int i = 30; i < 36; i++) mesh.norms[i] = glm::vec3(0, 1, 0);
 
-	glGenVertexArrays(1, &model.VertexArrayID);
-	glGenBuffers(1, &model.vertbId);
-	glGenBuffers(1, &model.normbId);	
+	glGenVertexArrays(1, &mesh.VertexArrayID);
+	glGenBuffers(1, &mesh.vertbId);
+	glGenBuffers(1, &mesh.normbId);	
 
-	glBindVertexArray(model.VertexArrayID);
+	glBindVertexArray(mesh.VertexArrayID);
 
 	// Get a handle for our "MVP" uniform
-	model.ShaderID = LoadShaders("shader.vert", "shader.frag");
-	model.MatrixID = glGetUniformLocation(model.ShaderID, "MVP");
-	model.ViewMatrixID = glGetUniformLocation(model.ShaderID, "V");
-	model.ModelMatrixID = glGetUniformLocation(model.ShaderID, "M");		
-	model.LightID = glGetUniformLocation(model.ShaderID, "LightPosition_worldspace");
+	mesh.ShaderID = LoadShaders("shader.vert", "shader.frag");
+	mesh.MatrixID = glGetUniformLocation(mesh.ShaderID, "MVP");
+	mesh.ViewMatrixID = glGetUniformLocation(mesh.ShaderID, "V");
+	mesh.ModelMatrixID = glGetUniformLocation(mesh.ShaderID, "M");		
+	mesh.LightID = glGetUniformLocation(mesh.ShaderID, "LightPosition_worldspace");
 
 	// VERTS
-	glBindBuffer(GL_ARRAY_BUFFER, model.vertbId);
-	glBufferData(GL_ARRAY_BUFFER, model.verts.size() * sizeof(glm::vec3), model.verts.data(), GL_STATIC_DRAW);
-	model.in_PositionLocation = glGetAttribLocation(model.ShaderID, "vertexPosition_modelspace");
-	glEnableVertexAttribArray(model.in_PositionLocation);
-	glVertexAttribPointer(model.in_PositionLocation, 3, GL_FLOAT, GL_FALSE, 0, 0); // Set up the vertex attributes pointer
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
+	glBufferData(GL_ARRAY_BUFFER, mesh.verts.size() * sizeof(glm::vec3), mesh.verts.data(), GL_STATIC_DRAW);
+	mesh.in_PositionLocation = glGetAttribLocation(mesh.ShaderID, "vertexPosition_modelspace");
+	glEnableVertexAttribArray(mesh.in_PositionLocation);
+	glVertexAttribPointer(mesh.in_PositionLocation, 3, GL_FLOAT, GL_FALSE, 0, 0); // Set up the vertex attributes pointer
 
 	// NORMS
-	glBindBuffer(GL_ARRAY_BUFFER, model.normbId);
-	glBufferData(GL_ARRAY_BUFFER, model.norms.size() * sizeof(glm::vec3), model.norms.data(), GL_STATIC_DRAW);
-	model.in_NormalLocation = glGetAttribLocation(model.ShaderID, "vertexNormal_modelspace");
-	glEnableVertexAttribArray(model.in_NormalLocation);
-	glVertexAttribPointer(model.in_NormalLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
+	glBufferData(GL_ARRAY_BUFFER, mesh.norms.size() * sizeof(glm::vec3), mesh.norms.data(), GL_STATIC_DRAW);
+	mesh.in_NormalLocation = glGetAttribLocation(mesh.ShaderID, "vertexNormal_modelspace");
+	glEnableVertexAttribArray(mesh.in_NormalLocation);
+	glVertexAttribPointer(mesh.in_NormalLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
 }
 
 
-void initObj(Model& model)
+void initObj(Mesh& mesh)
 {	
-	loadOBJ("suzanne.obj", model.verts, model.uvs, model.norms);
+	loadOBJ("suzanne.obj", mesh.verts, mesh.uvs, mesh.norms);
 
-	glGenVertexArrays(1, &model.VertexArrayID);
-	glGenBuffers(1, &model.normbId);
-	glGenBuffers(1, &model.vertbId);
-	glGenBuffers(1, &model.uvbId);
+	glGenVertexArrays(1, &mesh.VertexArrayID);
+	glGenBuffers(1, &mesh.normbId);
+	glGenBuffers(1, &mesh.vertbId);
+	glGenBuffers(1, &mesh.uvbId);
 
-	glBindVertexArray(model.VertexArrayID);
+	glBindVertexArray(mesh.VertexArrayID);
 
 	// Get a handle for our "MVP" uniform
-	model.ShaderID = LoadShaders("shader.vert", "shader.frag");
-	model.MatrixID = glGetUniformLocation(model.ShaderID, "MVP");
-	model.ViewMatrixID = glGetUniformLocation(model.ShaderID, "V");
-	model.ModelMatrixID = glGetUniformLocation(model.ShaderID, "M");
-	model.Texture = loadDDS("uvmap.DDS");
-	model.TextureID = glGetUniformLocation(model.ShaderID, "myTextureSampler");
-	model.LightID = glGetUniformLocation(model.ShaderID, "LightPosition_worldspace");
+	mesh.ShaderID = LoadShaders("shader.vert", "shader.frag");
+	mesh.MatrixID = glGetUniformLocation(mesh.ShaderID, "MVP");
+	mesh.ViewMatrixID = glGetUniformLocation(mesh.ShaderID, "V");
+	mesh.ModelMatrixID = glGetUniformLocation(mesh.ShaderID, "M");
+	mesh.Texture = loadDDS("uvmap.DDS");
+	mesh.TextureID = glGetUniformLocation(mesh.ShaderID, "myTextureSampler");
+	mesh.LightID = glGetUniformLocation(mesh.ShaderID, "LightPosition_worldspace");
 
-	glBindVertexArray(model.VertexArrayID);
+	glBindVertexArray(mesh.VertexArrayID);
 
 	// VERTS
-	glBindBuffer(GL_ARRAY_BUFFER, model.vertbId);
-	glBufferData(GL_ARRAY_BUFFER, model.verts.size() * sizeof(glm::vec3), model.verts.data(), GL_STATIC_DRAW);
-	model.in_PositionLocation = glGetAttribLocation(model.ShaderID, "vertexPosition_modelspace");	
-	glBindBuffer(GL_ARRAY_BUFFER, model.vertbId);
-	glBufferData(GL_ARRAY_BUFFER, model.verts.size() * sizeof(glm::vec3), model.verts.data(), GL_STATIC_DRAW);	
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
+	glBufferData(GL_ARRAY_BUFFER, mesh.verts.size() * sizeof(glm::vec3), mesh.verts.data(), GL_STATIC_DRAW);
+	mesh.in_PositionLocation = glGetAttribLocation(mesh.ShaderID, "vertexPosition_modelspace");	
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
+	glBufferData(GL_ARRAY_BUFFER, mesh.verts.size() * sizeof(glm::vec3), mesh.verts.data(), GL_STATIC_DRAW);	
 
 	// UVS
-	glBindBuffer(GL_ARRAY_BUFFER, model.uvbId);
-	glBufferData(GL_ARRAY_BUFFER, model.uvs.size() * sizeof(glm::vec3), model.uvs.data(), GL_STATIC_DRAW);
-	model.in_UVLocation = glGetAttribLocation(model.ShaderID, "vertexUV");
-	glEnableVertexAttribArray(model.in_UVLocation);
-	glVertexAttribPointer(model.in_UVLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.uvbId);
+	glBufferData(GL_ARRAY_BUFFER, mesh.uvs.size() * sizeof(glm::vec3), mesh.uvs.data(), GL_STATIC_DRAW);
+	mesh.in_UVLocation = glGetAttribLocation(mesh.ShaderID, "vertexUV");
+	glEnableVertexAttribArray(mesh.in_UVLocation);
+	glVertexAttribPointer(mesh.in_UVLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	
 
 	// NORMS
-	glBindBuffer(GL_ARRAY_BUFFER, model.normbId);
-	glBufferData(GL_ARRAY_BUFFER, model.norms.size() * sizeof(glm::vec3), model.norms.data(), GL_STATIC_DRAW);
-	model.in_NormalLocation = glGetAttribLocation(model.ShaderID, "vertexNormal_modelspace");
-	glEnableVertexAttribArray(model.in_NormalLocation);
-	glVertexAttribPointer(model.in_NormalLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
+	glBufferData(GL_ARRAY_BUFFER, mesh.norms.size() * sizeof(glm::vec3), mesh.norms.data(), GL_STATIC_DRAW);
+	mesh.in_NormalLocation = glGetAttribLocation(mesh.ShaderID, "vertexNormal_modelspace");
+	glEnableVertexAttribArray(mesh.in_NormalLocation);
+	glVertexAttribPointer(mesh.in_NormalLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 }
 
-void drawObj(const Model& model)	
+void drawObj(const Mesh& mesh)	
 {
-	bindShader(model.ShaderID);
+	bindShader(mesh.ShaderID);
 
 	computeMatricesFromInputs();
 	glm::mat4 ProjectionMatrix = getProjectionMatrix();
@@ -216,29 +216,29 @@ void drawObj(const Model& model)
 	glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
 	//glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 5.0f));
 
-	glUniform3f(model.LightID, LightPos.x, LightPos.y, LightPos.z);
+	glUniform3f(mesh.LightID, LightPos.x, LightPos.y, LightPos.z);
 
 
-	glUniformMatrix4fv(model.MatrixID, 1, GL_FALSE, &MVP[0][0]);
-	glUniformMatrix4fv(model.ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
-	glUniformMatrix4fv(model.ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
+	glUniformMatrix4fv(mesh.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+	glUniformMatrix4fv(mesh.ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
+	glUniformMatrix4fv(mesh.ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
 	
 	//glUniformMatrix4fv(model.trans, 1, GL_FALSE, &translation[0][0]);
 
 	// Bind our texture in Texture Unit 0
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, model.Texture);
+	glBindTexture(GL_TEXTURE_2D, mesh.Texture);
 	// Set our "myTextureSampler" sampler to use Texture Unit 0
-	glUniform1i(model.TextureID, 0);
+	glUniform1i(mesh.TextureID, 0);
 
-	glBindVertexArray(model.VertexArrayID);
+	glBindVertexArray(mesh.VertexArrayID);
 
 
 
 
 	// 1rst attribute buffer : vertices
 	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, model.vertbId);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
 	glVertexAttribPointer(
 		0,                  // attribute
 		3,                  // size
@@ -250,7 +250,7 @@ void drawObj(const Model& model)
 
 	// 2nd attribute buffer : UVs
 	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, model.uvbId);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.uvbId);
 	glVertexAttribPointer(
 		1,                                // attribute
 		2,                                // size
@@ -262,7 +262,7 @@ void drawObj(const Model& model)
 
 	// 3rd attribute buffer : normals
 	glEnableVertexAttribArray(2);
-	glBindBuffer(GL_ARRAY_BUFFER, model.normbId);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
 	glVertexAttribPointer(
 		2,                                // attribute
 		3,                                // size
@@ -272,7 +272,7 @@ void drawObj(const Model& model)
 		(void*)0                          // array buffer offset
 	);
 	
-	glDrawArrays(GL_TRIANGLES, 0, model.verts.size());
+	glDrawArrays(GL_TRIANGLES, 0, mesh.verts.size());
 
 
 	glBindVertexArray(0);
@@ -280,9 +280,9 @@ void drawObj(const Model& model)
 }
 
 
-void drawCube(Model model)
+void drawCube(Mesh mesh)
 {
-	bindShader(model.ShaderID);
+	bindShader(mesh.ShaderID);
 
 	computeMatricesFromInputs();
 	glm::mat4 ProjectionMatrix = getProjectionMatrix();
@@ -292,18 +292,18 @@ void drawCube(Model model)
 
 	glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;		
 
-	glUniform3f(model.LightID, LightPos.x, LightPos.y, LightPos.z);
-	glUniformMatrix4fv(model.MatrixID, 1, GL_FALSE, &MVP[0][0]);
-	glUniformMatrix4fv(model.ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
-	glUniformMatrix4fv(model.ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);		
+	glUniform3f(mesh.LightID, LightPos.x, LightPos.y, LightPos.z);
+	glUniformMatrix4fv(mesh.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+	glUniformMatrix4fv(mesh.ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
+	glUniformMatrix4fv(mesh.ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);		
 
-	glBindVertexArray(model.VertexArrayID);
+	glBindVertexArray(mesh.VertexArrayID);
 
 	// 1rst attribute buffer : vertices	
-	glEnableVertexAttribArray(model.in_PositionLocation);
-	glBindBuffer(GL_ARRAY_BUFFER, model.vertbId);
+	glEnableVertexAttribArray(mesh.in_PositionLocation);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
 	glVertexAttribPointer(
-		model.in_PositionLocation,                  // attribute
+		mesh.in_PositionLocation,                  // attribute
 		3,                  // size
 		GL_FLOAT,           // type
 		GL_FALSE,           // normalized?
@@ -313,10 +313,10 @@ void drawCube(Model model)
 
 
 	// 2rd attribute buffer : normals
-	glEnableVertexAttribArray(model.in_NormalLocation);
-	glBindBuffer(GL_ARRAY_BUFFER, model.normbId);
+	glEnableVertexAttribArray(mesh.in_NormalLocation);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
 	glVertexAttribPointer(
-		model.in_NormalLocation,          // attribute
+		mesh.in_NormalLocation,          // attribute
 		3,                                // size
 		GL_FLOAT,                         // type
 		GL_FALSE,                         // normalized?
@@ -324,14 +324,14 @@ void drawCube(Model model)
 		0                          // array buffer offset
 	);
 
-	glDrawArrays(GL_TRIANGLES, 0, model.verts.size());
+	glDrawArrays(GL_TRIANGLES, 0, mesh.verts.size());
 
 	glBindVertexArray(0);
 	unbindShader();
 }
 
 
-void destroy(const Model& model)
+void destroy(const Mesh& model)
 {
 	if(model.vertbId > 0) glDeleteBuffers(1, &model.vertbId);
 	if (model.uvbId > 0) glDeleteBuffers(1, &model.uvbId);
@@ -398,12 +398,12 @@ int main(void)
 	// INIT OBJ
 	// Read our .obj file
 	// Load the texture
-	Model obj;
+	Mesh obj;
 	initObj(obj);
 
 
 	// INIT CUBE
-	Model cube;
+	Mesh cube;
 	initCube(cube);
 
 
