@@ -1,11 +1,3 @@
-//* Nom 1 : Olivier Perrault                                                         *
-//*	CIP 1 : pero2102
-//* Mat 1 : 16212377								        *
-//*																	*
-//* Nom 2 : Cyril Mougin                                                        *
-//*	CIP 2 :	mouc2401													        *
-//* Mat 2 : 19108350												*
-
 // Include standard headers
 #include <stdio.h>
 #include <stdlib.h>
@@ -99,7 +91,8 @@ int main( void )
 	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
 	GLuint ViewMatrixID = glGetUniformLocation(programID, "V");
 	GLuint ModelMatrixID = glGetUniformLocation(programID, "M");
-	GLfloat uniform_twist = glGetUniformLocation(programID, "twist");
+	GLuint trans = glGetUniformLocation(programID, "trans");
+	
 
 	// Load the texture
 	GLuint Texture = loadDDS("uvmap.DDS");
@@ -112,8 +105,57 @@ int main( void )
 	std::vector<glm::vec2> uvs;
 	std::vector<glm::vec3> normals;
 	bool res = loadOBJ("suzanne.obj", vertices, uvs, normals);
+	//bool res = loadOBJ("lumberjack.obj", vertices, uvs, normals);
+
+	static const GLfloat g_vertex_buffer_data[] = {
+	-1.0f,-1.0f,-1.0f, // triangle 1 : begin
+	-1.0f,-1.0f, 1.0f,
+	-1.0f, 1.0f, 1.0f, // triangle 1 : end
+	1.0f, 1.0f,-1.0f, // triangle 2 : begin
+	-1.0f,-1.0f,-1.0f,
+	-1.0f, 1.0f,-1.0f, // triangle 2 : end
+	1.0f,-1.0f, 1.0f,
+	-1.0f,-1.0f,-1.0f,
+	1.0f,-1.0f,-1.0f,
+	1.0f, 1.0f,-1.0f,
+	1.0f,-1.0f,-1.0f,
+	-1.0f,-1.0f,-1.0f,
+	-1.0f,-1.0f,-1.0f,
+	-1.0f, 1.0f, 1.0f,
+	-1.0f, 1.0f,-1.0f,
+	1.0f,-1.0f, 1.0f,
+	-1.0f,-1.0f, 1.0f,
+	-1.0f,-1.0f,-1.0f,
+	-1.0f, 1.0f, 1.0f,
+	-1.0f,-1.0f, 1.0f,
+	1.0f,-1.0f, 1.0f,
+	1.0f, 1.0f, 1.0f,
+	1.0f,-1.0f,-1.0f,
+	1.0f, 1.0f,-1.0f,
+	1.0f,-1.0f,-1.0f,
+	1.0f, 1.0f, 1.0f,
+	1.0f,-1.0f, 1.0f,
+	1.0f, 1.0f, 1.0f,
+	1.0f, 1.0f,-1.0f,
+	-1.0f, 1.0f,-1.0f,
+	1.0f, 1.0f, 1.0f,
+	-1.0f, 1.0f,-1.0f,
+	-1.0f, 1.0f, 1.0f,
+	1.0f, 1.0f, 1.0f,
+	-1.0f, 1.0f, 1.0f,
+	1.0f,-1.0f, 1.0f
+	};
+
+
+
+
 
 	// Load it into a VBO
+
+	GLuint cubebuffer;
+	glGenBuffers(1, &cubebuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, cubebuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
 
 	GLuint vertexbuffer;
 	glGenBuffers(1, &vertexbuffer);
@@ -135,9 +177,11 @@ int main( void )
 	GLuint LightID = glGetUniformLocation(programID, "LightPosition_worldspace");
 
 	do{
-		float twist = 2.0f * sin(0.5f * (float)glfwGetTime());
+		
 		// Clear the screen
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT| GL_STENCIL_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LESS);
 
 		// Use our shader
 		glUseProgram(programID);
@@ -148,14 +192,18 @@ int main( void )
 		glm::mat4 ViewMatrix = getViewMatrix();
 		glm::mat4 ModelMatrix = glm::mat4(1.0);
 		glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
+		glm::mat4 translation = glm::mat4(1.0f);
+		translation = glm::translate(translation, glm::vec3(0.0f, 0.0f, 0.0f));
 
+		
 		// Send our transformation to the currently bound shader, 
 		// in the "MVP" uniform
 		
-		glUniform1f(uniform_twist, twist);
+		
 		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
 		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
+		glUniformMatrix4fv(trans, 1, GL_FALSE, &translation[0][0]);
 
 		glm::vec3 lightPos = glm::vec3(4,4,4);
 		glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
@@ -202,13 +250,34 @@ int main( void )
 			(void*)0                          // array buffer offset
 		);
 
+		glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+
+
+		//translation = glm::translate(translation, glm::vec3(1.0f, 1.0f, 1.0f));
+		//glUniformMatrix4fv(trans, 1, GL_FALSE, &translation[0][0]);
+
+		translation = glm::translate(translation, glm::vec3(0.0f, 0.0f, 5.0));
+		glUniformMatrix4fv(trans, 1, GL_FALSE, &translation[0][0]);
+		glEnableVertexAttribArray(3);
+		glBindBuffer(GL_ARRAY_BUFFER, cubebuffer);
+		glVertexAttribPointer(
+			0,                  // attribute. No particular reason for 0, but must match the layout in the shader.
+			3,                  // size
+			GL_FLOAT,           // type
+			GL_FALSE,           // normalized?
+			0,                  // stride
+			(void*)0            // array buffer offset
+		);
+		
+
 		// Draw the triangles !
-		glDrawArrays(GL_TRIANGLES, 0, vertices.size() );
+	
+		glDrawArrays(GL_TRIANGLES, 3, 12 * 3);
 
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
 		glDisableVertexAttribArray(2);
-
+		glDisableVertexAttribArray(3);
 		// Swap buffers
 		glfwSwapBuffers(window);
 		glfwPollEvents();
