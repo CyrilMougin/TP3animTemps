@@ -17,13 +17,11 @@ uniform mat4 MVP;
 uniform mat4 V;
 uniform mat4 M;
 uniform vec3 LightPosition_worldspace;
-uniform mat4 trans;
-
 
 void main(){
 
 	// Output position of the vertex, in clip space : MVP * position
-	gl_Position = MVP*trans  *vec4(vertexPosition_modelspace,1);
+	gl_Position = MVP * vec4(vertexPosition_modelspace,1);
 	
 	// Position of the vertex, in worldspace : M * position
 	Position_worldspace = (M * vec4(vertexPosition_modelspace,1)).xyz;
