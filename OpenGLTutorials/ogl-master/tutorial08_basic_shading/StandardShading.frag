@@ -31,13 +31,7 @@ void main(){
 	float LightPower = 50.0f;
 	
 	// Material properties
-    vec3 MaterialDiffuseColor = 
-		mod(floor(100.0f * UV.x) + floor(100.0f * UV.y), 2.0) == 0.0 ?
-			// Yellow
-			vec3(1, 1, 0) : 
-			// Blue
-			vec3(0, 0, 1);
-
+    vec3 MaterialDiffuseColor = vec3(0, 0, 1);
 
 	vec3 MaterialAmbientColor = vec3(0.1,0.1,0.1) * MaterialDiffuseColor;
 	vec3 MaterialSpecularColor = vec3(0.3,0.3,0.3);
