@@ -62,21 +62,42 @@ glm::vec3 LightPos = glm::vec3(4, 4, 4);
 Shader loadShaderPass(const std::string& vert, const std::string& frag)
 {
 	Shader shaderPass;
-	shaderPass.ID = LoadShaders("shader.vert", "shader.frag");
+	/*
+		layout(location = 0) in vec3 vertexPosition_modelspace;
+		layout(location = 1) in vec2 vertexUV;
+		layout(location = 2) in vec3 vertexNormal_modelspace;
+
+		// Output data ; will be interpolated for each fragment.
+		out vec2 UV;
+		out vec3 Position_worldspace;
+		out vec3 Normal_cameraspace;
+		out vec3 EyeDirection_cameraspace;
+		out vec3 LightDirection_cameraspace;
+
+		// Values that stay constant for the whole mesh.
+		uniform mat4 MVP;
+		uniform mat4 V;
+		uniform mat4 M;
+		uniform vec3 LightPosition_worldspace;
+
+	*/
+
+	shaderPass.ID = LoadShaders(vert.c_str(), frag.c_str());
 	shaderPass.MatrixID = glGetUniformLocation(shaderPass.ID, "MVP");
 	shaderPass.ViewMatrixID = glGetUniformLocation(shaderPass.ID, "V");
 	shaderPass.ModelMatrixID = glGetUniformLocation(shaderPass.ID, "M");
 	shaderPass.LightID = glGetUniformLocation(shaderPass.ID, "LightPosition_worldspace");
-	shaderPass.TextureID = glGetUniformLocation(shaderPass.ID, "myTextureSampler");
+	//shaderPass.TextureID = glGetUniformLocation(shaderPass.ID, "myTextureSampler");
 
 	// VERTS
 	shaderPass.in_PositionLocation = glGetAttribLocation(shaderPass.ID, "vertexPosition_modelspace");
 	glEnableVertexAttribArray(shaderPass.in_PositionLocation);
 	glVertexAttribPointer(shaderPass.in_PositionLocation, 3, GL_FLOAT, GL_FALSE, 0, 0); // Set up the vertex attributes pointer
 
+	// UVS
 	shaderPass.in_UVLocation = glGetAttribLocation(shaderPass.ID, "vertexUV");
 	glEnableVertexAttribArray(shaderPass.in_UVLocation);
-	glVertexAttribPointer(shaderPass.in_UVLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(shaderPass.in_UVLocation, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
 	// NORMS
 	shaderPass.in_NormalLocation = glGetAttribLocation(shaderPass.ID, "vertexNormal_modelspace");
@@ -220,12 +241,11 @@ void initObj(Mesh& mesh)
 
 	// UVS
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.uvbId);
-	glBufferData(GL_ARRAY_BUFFER, mesh.uvs.size() * sizeof(glm::vec3), mesh.uvs.data(), GL_STATIC_DRAW);		
+	glBufferData(GL_ARRAY_BUFFER, mesh.uvs.size() * sizeof(glm::vec2), mesh.uvs.data(), GL_STATIC_DRAW);		
 
 	// NORMS
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
 	glBufferData(GL_ARRAY_BUFFER, mesh.norms.size() * sizeof(glm::vec3), mesh.norms.data(), GL_STATIC_DRAW);
-
 }
 
 void draw(const Mesh& mesh)	

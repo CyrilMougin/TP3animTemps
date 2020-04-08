@@ -31,6 +31,13 @@ void main(){
 	float LightPower = 50.0f;
 	
 	// Material properties
+//    vec3 MaterialDiffuseColor = 
+//		mod(floor(100.0f * UV.x) + floor(100.0f * UV.y), 2.0) == 0.0 ?
+//			// Yellow
+//			vec3(1, 1, 0) : 
+//			// Blue
+//			vec3(0, 0, 1);
+
     vec3 MaterialDiffuseColor = vec3(0, 0, 1);
 
 	vec3 MaterialAmbientColor = vec3(0.1,0.1,0.1) * MaterialDiffuseColor;
@@ -59,7 +66,14 @@ void main(){
 	//  - Looking into the reflection -> 1
 	//  - Looking elsewhere -> < 1
 	float cosAlpha = clamp( dot( E,R ), 0,1 );
-	
-	color = vec3(1,0 ,0);
+		
+
+	color = 
+		// Ambient : simulates indirect lighting
+		MaterialAmbientColor +
+		// Diffuse : "color" of the object
+		MaterialDiffuseColor * LightColor * LightPower * cosTheta / (distance*distance) +
+		// Specular : reflective highlight, like a mirror
+		MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha,5) / (distance*distance);
 
 }
