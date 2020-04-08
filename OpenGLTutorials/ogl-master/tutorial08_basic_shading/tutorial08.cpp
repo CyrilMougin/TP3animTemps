@@ -45,7 +45,6 @@ struct Shader
 	int in_NormalLocation = 0;
 	GLuint TextureID = 0;
 	GLuint DepthTextureID = 0;
-	GLuint VertexArrayID = 0;
 };
 
 struct Mesh
@@ -61,6 +60,7 @@ struct Mesh
 	glm::mat4 MVP;
 	std::vector<Shader> ShaderPasses;
 	GLuint Texture = 0;	
+	GLuint VertexArrayID = 0;
 };
 
 Shader loadShaderPass(const std::string& vert, const std::string& frag)
@@ -71,7 +71,7 @@ Shader loadShaderPass(const std::string& vert, const std::string& frag)
 
 	shaderPass.ID = LoadShaders(vert.c_str(), frag.c_str());		
 	
-	glGenVertexArrays(1, &shaderPass.VertexArrayID);
+	/*glGenVertexArrays(1, &shaderPass.VertexArrayID);*/
 
 	shaderPass.MatrixID = glGetUniformLocation(shaderPass.ID, "MVP");
 	shaderPass.ViewMatrixID = glGetUniformLocation(shaderPass.ID, "V");
@@ -116,6 +116,7 @@ static const GLenum FrameBuffers[] = {
 
 void initFrameBuffer()
 {
+
 	// create a RGBA color texture
 	glGenTextures(1, &ColorTextureID);
 	glBindTexture(GL_TEXTURE_2D, ColorTextureID);
@@ -234,6 +235,8 @@ void initCube(Mesh& mesh)
 	// NORMS
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
 	glBufferData(GL_ARRAY_BUFFER, mesh.norms.size() * sizeof(glm::vec3), mesh.norms.data(), GL_STATIC_DRAW);
+
+	glGenVertexArrays(1, &mesh.VertexArrayID);
 }
 
 
@@ -261,6 +264,8 @@ void initObj(Mesh& mesh)
 	// NORMS
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
 	glBufferData(GL_ARRAY_BUFFER, mesh.norms.size() * sizeof(glm::vec3), mesh.norms.data(), GL_STATIC_DRAW);
+
+	glGenVertexArrays(1, &mesh.VertexArrayID);
 }
 
 void draw(const Mesh& mesh)
@@ -272,7 +277,7 @@ void draw(const Mesh& mesh)
 	for (auto shader = mesh.ShaderPasses.begin(); shader != mesh.ShaderPasses.end(); shader++)
 	{		
 		glUseProgram(shader->ID);
-		glBindVertexArray(shader->VertexArrayID);
+		glBindVertexArray(mesh.VertexArrayID);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -339,7 +344,7 @@ void destroy(const Mesh& mesh)
 	for (auto shader = mesh.ShaderPasses.begin(); shader != mesh.ShaderPasses.end(); shader++)
 	{
 		if (shader->ID > 0) glDeleteProgram(shader->ID);
-		if (shader->VertexArrayID > 0)glDeleteVertexArrays(1, &shader->VertexArrayID);
+		if (mesh.VertexArrayID > 0)glDeleteVertexArrays(1, &mesh.VertexArrayID);
 	}
 
 	if (mesh.Texture > 0) glDeleteTextures(1, &mesh.Texture);
