@@ -252,7 +252,7 @@ void draw(const Mesh& mesh)
 		glUseProgram(shader->ID);
 		glBindVertexArray(mesh.VertexArrayID);
 
-		//glClear(GL_COLOR_BUFFER_BIT);// | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		glUniform3f(shader->LightID, LightPos.x, LightPos.y, LightPos.z);
 		glUniformMatrix4fv(shader->MatrixID, 1, GL_FALSE, &mesh.MVP[0][0]);
