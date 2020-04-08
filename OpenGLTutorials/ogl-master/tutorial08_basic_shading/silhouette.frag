@@ -32,7 +32,9 @@ void main(){
 	
 	float depth = gl_FragCoord.z;
 	
+//	color = vec3(1, 0, 0);
 	return;
+	
 
 	// Material properties
 //    vec3 MaterialDiffuseColor = 

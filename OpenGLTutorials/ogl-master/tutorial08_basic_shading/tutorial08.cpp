@@ -67,15 +67,15 @@ Shader loadShaderPass(const std::string& vert, const std::string& frag)
 
 	shaderPass.Name = vert;
 
-	shaderPass.ID = LoadShaders(vert.c_str(), frag.c_str());
+	shaderPass.ID = LoadShaders(vert.c_str(), frag.c_str());	
+	glUseProgram(shaderPass.ID);
+	
 	shaderPass.MatrixID = glGetUniformLocation(shaderPass.ID, "MVP");
 	shaderPass.ViewMatrixID = glGetUniformLocation(shaderPass.ID, "V");
 	shaderPass.ModelMatrixID = glGetUniformLocation(shaderPass.ID, "M");
 	shaderPass.LightID = glGetUniformLocation(shaderPass.ID, "LightPosition_worldspace");
-	//shaderPass.TextureID = glGetUniformLocation(shaderPass.ID, "myTextureSampler");
-
-	shaderPass.DepthTextureID = glGetUniformLocation(shaderPass.ID, "depthTexture");
-	glUniform1i(shaderPass.DepthTextureID, DepthTextureID);
+	shaderPass.DepthTextureID = glGetUniformLocation(shaderPass.ID, "depthTexture");	
+	
 
 	// VERTS
 	shaderPass.in_PositionLocation = glGetAttribLocation(shaderPass.ID, "vertexPosition_modelspace");
@@ -96,16 +96,16 @@ Shader loadShaderPass(const std::string& vert, const std::string& frag)
 }
 
 // Bind the shader
-void bindShader(GLuint shaderID)
-{
-	glUseProgram(shaderID);
-}
-
-// Unbind the shader
-void unbindShader()
-{
-	glUseProgram(0);
-}
+//void bindShader(GLuint shaderID)
+//{
+//	glUseProgram(shaderID);
+//}
+//
+//// Unbind the shader
+//void unbindShader()
+//{
+//	glUseProgram(0);
+//}
 
 void initDepthBuffer()
 {
@@ -225,7 +225,7 @@ void initObj(Mesh& mesh)
 	
 	// Get a handle for our "MVP" uniform
 	mesh.ShaderPasses.push_back(loadShaderPass("silhouette.vert", "silhouette.frag"));
-	mesh.ShaderPasses.push_back(loadShaderPass("silhouette2.vert", "silhouette2.frag"));
+	mesh.ShaderPasses.push_back(loadShaderPass("silhouette2.vert", "silhouette2.frag"));	
 	mesh.Texture = loadDDS("uvmap.DDS");	
 
 	// VERTS
@@ -247,20 +247,22 @@ void draw(const Mesh& mesh)
 	glDepthFunc(GL_LESS);
 
 	for (auto shader = mesh.ShaderPasses.begin(); shader != mesh.ShaderPasses.end(); shader++)
-	{
-		bindShader(shader->ID);
+	{		
+		glUseProgram(shader->ID);
+		glBindVertexArray(mesh.VertexArrayID);
+
+		//glClear(GL_COLOR_BUFFER_BIT);// | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		glUniform3f(shader->LightID, LightPos.x, LightPos.y, LightPos.z);
 		glUniformMatrix4fv(shader->MatrixID, 1, GL_FALSE, &mesh.MVP[0][0]);
 		glUniformMatrix4fv(shader->ViewMatrixID, 1, GL_FALSE, &mesh.ViewMatrix[0][0]);
 		glUniformMatrix4fv(shader->ModelMatrixID, 1, GL_FALSE, &mesh.ModelMatrix[0][0]);
 
-		glBindVertexArray(mesh.VertexArrayID);
-
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, DepthTextureID);
-		glUniform1i(shader->DepthTextureID, 2);
-		
+	
+		//glActiveTexture(GL_TEXTURE2);
+		//glBindTexture(GL_TEXTURE_2D, DepthTextureID);
+		//glUniform1i(shader->DepthTextureID, 2);
+		//
 
 		// 1rst attribute buffer : vertices
 		glEnableVertexAttribArray(0);
@@ -300,8 +302,9 @@ void draw(const Mesh& mesh)
 
 		glDrawArrays(GL_TRIANGLES, 0, mesh.verts.size());
 
+			
 		glBindVertexArray(0);
-		unbindShader();
+		glUseProgram(0);// unbind shader
 	}
 }
 
@@ -392,7 +395,6 @@ int main(void)
 	// INIT CUBE
 	Mesh cube;
 	initCube(cube);
-
 
 	do {
 
