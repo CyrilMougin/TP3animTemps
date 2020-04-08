@@ -71,9 +71,8 @@ void main(){
 	float cosAlpha = clamp( dot( E,R ), 0,1 );
 		
 	float zdepth = texture(depthTexture, UV).r;
-	
-	// TODO
-	if (!(zdepth < gl_FragCoord.z)) return;	
+		
+	if (zdepth >= gl_FragCoord.z) return;	
 
 	color = vec3(1, 0, 0);
 //		// Ambient : simulates indirect lighting

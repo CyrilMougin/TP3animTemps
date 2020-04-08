@@ -70,16 +70,16 @@ void main(){
 	//  - Looking elsewhere -> < 1
 	float cosAlpha = clamp( dot( E,R ), 0,1 );
 		
-//	float zdepth = texture(depthTexture, UV).r;
+	float zdepth = texture(depthTexture, UV).r;
 	
-//	if (!(zdepth < gl_FragCoord.z)) return;	
+	if (zdepth < gl_FragCoord.z) return;	
 
-	color = vec3(0, 1, 0);
+	color = 
 		// Ambient : simulates indirect lighting
-//		MaterialAmbientColor +
-//		// Diffuse : "color" of the object
-//		MaterialDiffuseColor * LightColor * LightPower * cosTheta / (distance*distance) +
-//		// Specular : reflective highlight, like a mirror
-//		MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha,5) / (distance*distance);
+		MaterialAmbientColor +
+		// Diffuse : "color" of the object
+		MaterialDiffuseColor * LightColor * LightPower * cosTheta / (distance*distance) +
+		// Specular : reflective highlight, like a mirror
+		MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha,5) / (distance*distance);
 
 }
