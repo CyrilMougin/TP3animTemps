@@ -17,6 +17,7 @@ uniform mat4 MVP;
 uniform mat4 V;
 uniform mat4 M;
 uniform vec3 LightPosition_worldspace;
+uniform sampler2D depthTexture;
 
 void main(){
 

@@ -29,7 +29,7 @@ void main(){
 	// You probably want to put them as uniforms
 	vec3 LightColor = vec3(1,1,1);
 	float LightPower = 50.0f;
-	
+		
 	// Material properties
 //    vec3 MaterialDiffuseColor = 
 //		mod(floor(100.0f * UV.x) + floor(100.0f * UV.y), 2.0) == 0.0 ?

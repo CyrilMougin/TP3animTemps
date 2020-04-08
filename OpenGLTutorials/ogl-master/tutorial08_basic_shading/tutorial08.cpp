@@ -22,6 +22,9 @@ using namespace std;
 #include <common/objloader.hpp>
 #include <common/vboindexer.hpp>
 
+GLuint depthrenderbuffer;
+GLuint depthTexture;
+
 struct Shader
 {
 	GLuint ID = 0;
@@ -33,6 +36,7 @@ struct Shader
 	int in_UVLocation = 0;
 	int in_NormalLocation = 0;
 	GLuint TextureID = 0;
+	GLuint DepthTextureID = 0;
 };
 
 struct Mesh
@@ -62,25 +66,7 @@ glm::vec3 LightPos = glm::vec3(4, 4, 4);
 Shader loadShaderPass(const std::string& vert, const std::string& frag)
 {
 	Shader shaderPass;
-	/*
-		layout(location = 0) in vec3 vertexPosition_modelspace;
-		layout(location = 1) in vec2 vertexUV;
-		layout(location = 2) in vec3 vertexNormal_modelspace;
 
-		// Output data ; will be interpolated for each fragment.
-		out vec2 UV;
-		out vec3 Position_worldspace;
-		out vec3 Normal_cameraspace;
-		out vec3 EyeDirection_cameraspace;
-		out vec3 LightDirection_cameraspace;
-
-		// Values that stay constant for the whole mesh.
-		uniform mat4 MVP;
-		uniform mat4 V;
-		uniform mat4 M;
-		uniform vec3 LightPosition_worldspace;
-
-	*/
 
 	shaderPass.ID = LoadShaders(vert.c_str(), frag.c_str());
 	shaderPass.MatrixID = glGetUniformLocation(shaderPass.ID, "MVP");
@@ -88,6 +74,9 @@ Shader loadShaderPass(const std::string& vert, const std::string& frag)
 	shaderPass.ModelMatrixID = glGetUniformLocation(shaderPass.ID, "M");
 	shaderPass.LightID = glGetUniformLocation(shaderPass.ID, "LightPosition_worldspace");
 	//shaderPass.TextureID = glGetUniformLocation(shaderPass.ID, "myTextureSampler");
+
+	shaderPass.DepthTextureID = glGetUniformLocation(shaderPass.ID, "depthTexture");
+	glBindTexture(shaderPass.DepthTextureID, depthTexture);
 
 	// VERTS
 	shaderPass.in_PositionLocation = glGetAttribLocation(shaderPass.ID, "vertexPosition_modelspace");
@@ -119,6 +108,31 @@ void unbindShader()
 	glUseProgram(0);
 }
 
+void initDepthBuffer()
+{	
+	//// The depth buffer	
+	//glGenRenderbuffers(1, &depthrenderbuffer);
+	//glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1024, 768);
+	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+	
+	/*GLuint depthTexture;*/
+	glGenTextures(1, &depthTexture);
+	glBindTexture(GL_TEXTURE_2D, depthTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0,GL_DEPTH_COMPONENT24, 1024, 768, 0,GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTexture, 0);
+
+
+	/*
+	glGenRenderbuffers(1, &depthrenderbuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowWidth, windowHeight);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);*/
+}
 
 void initCube(Mesh& mesh)
 {
@@ -261,17 +275,12 @@ void draw(const Mesh& mesh)
 		glUniformMatrix4fv(shader->MatrixID, 1, GL_FALSE, &mesh.MVP[0][0]);
 		glUniformMatrix4fv(shader->ViewMatrixID, 1, GL_FALSE, &mesh.ViewMatrix[0][0]);
 		glUniformMatrix4fv(shader->ModelMatrixID, 1, GL_FALSE, &mesh.ModelMatrix[0][0]);
-
-		//glUniformMatrix4fv(model.trans, 1, GL_FALSE, &translation[0][0]);
-
+		
 		// Bind our texture in Texture Unit 0
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, mesh.Texture);
-		// Set our "myTextureSampler" sampler to use Texture Unit 0
+		glBindTexture(GL_TEXTURE_2D, mesh.Texture);		
 		glUniform1i(shader->TextureID, 0);
-
 		glBindVertexArray(mesh.VertexArrayID);
-
 
 		// 1rst attribute buffer : vertices
 		glEnableVertexAttribArray(0);
@@ -310,7 +319,6 @@ void draw(const Mesh& mesh)
 		);
 
 		glDrawArrays(GL_TRIANGLES, 0, mesh.verts.size());
-
 
 		glBindVertexArray(0);
 		unbindShader();
@@ -392,6 +400,7 @@ int main(void)
 	//////////////////////////// TODO
 	//glEnable(GL_CULL_FACE);
 
+	initDepthBuffer();
 
 	// INIT OBJ
 	// Read our .obj file
@@ -429,10 +438,12 @@ int main(void)
 		glfwPollEvents();
 	
 	} // Check if the ESC key was pressed or the window was closed
-	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
+	while (
+		glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && 
 		glfwWindowShouldClose(window) == 0);
 
 	// Cleanup VBO and shader
+	glDeleteTextures(1, &depthTexture);
 	destroy(obj);
 	destroy(cube);
 
