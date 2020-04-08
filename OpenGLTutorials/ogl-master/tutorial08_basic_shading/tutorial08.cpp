@@ -116,19 +116,6 @@ static const GLenum FrameBuffers[] = {
 
 void initFrameBuffer()
 {
-	//glGenTextures(1, &DepthTextureID);
-	//glBindTexture(GL_TEXTURE_2D, DepthTextureID);
-
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	//glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, DepthTextureID, 0);
-
-	// generate a framebuffer 
-	//GLuint colorTex, depthTex, fbo;
-
 	// create a RGBA color texture
 	glGenTextures(1, &ColorTextureID);
 	glBindTexture(GL_TEXTURE_2D, ColorTextureID);
@@ -278,8 +265,9 @@ void initObj(Mesh& mesh)
 
 void draw(const Mesh& mesh)
 {
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+	//glEnable(GL_DEPTH_TEST);
+	//glDepthFunc(GL_LESS);
+	//glDrawBuffer(GL_FRONT);	
 
 	for (auto shader = mesh.ShaderPasses.begin(); shader != mesh.ShaderPasses.end(); shader++)
 	{		
@@ -294,11 +282,6 @@ void draw(const Mesh& mesh)
 		glUniformMatrix4fv(shader->ModelMatrixID, 1, GL_FALSE, &mesh.ModelMatrix[0][0]);
 
 	
-		//glActiveTexture(GL_TEXTURE2);
-		//glBindTexture(GL_TEXTURE_2D, DepthTextureID);
-		//glUniform1i(shader->DepthTextureID, 2);
-		//
-
 		// 1rst attribute buffer : vertices		
 		glEnableVertexAttribArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
@@ -339,10 +322,8 @@ void draw(const Mesh& mesh)
 
 		glDrawArrays(GL_TRIANGLES, 0, mesh.verts.size());
 		
-		//glDisableVertexAttribArray(0);
-		//glDisableVertexAttribArray(1);
-		//glDisableVertexAttribArray(2);
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glBindVertexArray(0);
 		glUseProgram(0);// unbind shader
 	}
@@ -374,6 +355,7 @@ void render(void)
 	glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);
 	// set up render target
 	glDrawBuffers(sizeof FrameBuffers / sizeof FrameBuffers[0], FrameBuffers);
+	glDrawBuffer(GL_FRONT);
 
 	//// Clear the screen
 	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -392,6 +374,9 @@ void render(void)
 	obj.ModelMatrix = translate(obj.ModelMatrix, glm::vec3(0, 0, 0));
 	obj.MVP = ProjectionMatrix * obj.ViewMatrix * obj.ModelMatrix;
 	draw(obj);
+
+	glUseProgram(0);
+	glFlush();
 
 	// Swap buffers
 	glfwSwapBuffers(window);
