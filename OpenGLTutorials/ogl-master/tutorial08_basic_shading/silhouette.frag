@@ -25,13 +25,13 @@ uniform vec3 LightPosition_worldspace;
 
 void main(){
 
+	return;
+
 	// Light emission properties
 	// You probably want to put them as uniforms
 	vec3 LightColor = vec3(1,1,1);
 	float LightPower = 50.0f;
-	
-	float depth = gl_FragCoord.z;
-	
+		
 
 	// Material properties
 //    vec3 MaterialDiffuseColor = 
