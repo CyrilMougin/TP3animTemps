@@ -70,6 +70,9 @@ void main(){
 	//  - Looking elsewhere -> < 1
 	float cosAlpha = clamp( dot( E,R ), 0,1 );
 		
+//	float zdepth = texture(depthTexture, UV).r;
+	
+//	if (!(zdepth < gl_FragCoord.z)) return;	
 
 	color = 
 		// Ambient : simulates indirect lighting

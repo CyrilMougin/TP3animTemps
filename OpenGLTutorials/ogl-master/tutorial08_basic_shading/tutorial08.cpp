@@ -23,7 +23,7 @@ using namespace std;
 #include <common/vboindexer.hpp>
 
 GLuint depthrenderbuffer;
-GLuint depthTexture;
+GLuint depthTextureID;
 
 struct Shader
 {
@@ -75,8 +75,8 @@ Shader loadShaderPass(const std::string& vert, const std::string& frag)
 	shaderPass.LightID = glGetUniformLocation(shaderPass.ID, "LightPosition_worldspace");
 	//shaderPass.TextureID = glGetUniformLocation(shaderPass.ID, "myTextureSampler");
 
-	shaderPass.DepthTextureID = glGetUniformLocation(shaderPass.ID, "depthTexture");
-	glBindTexture(shaderPass.DepthTextureID, depthTexture);
+	shaderPass.DepthTextureID = glGetUniformLocation(shaderPass.ID, "depthTexture");	
+	glUniform1i(shaderPass.DepthTextureID, depthTextureID);
 
 	// VERTS
 	shaderPass.in_PositionLocation = glGetAttribLocation(shaderPass.ID, "vertexPosition_modelspace");
@@ -109,29 +109,15 @@ void unbindShader()
 }
 
 void initDepthBuffer()
-{	
-	//// The depth buffer	
-	//glGenRenderbuffers(1, &depthrenderbuffer);
-	//glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
-	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1024, 768);
-	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
-	
-	/*GLuint depthTexture;*/
-	glGenTextures(1, &depthTexture);
-	glBindTexture(GL_TEXTURE_2D, depthTexture);
+{		
+	glGenTextures(1, &depthTextureID);	
 	glTexImage2D(GL_TEXTURE_2D, 0,GL_DEPTH_COMPONENT24, 1024, 768, 0,GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTexture, 0);
-
-
-	/*
-	glGenRenderbuffers(1, &depthrenderbuffer);
-	glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowWidth, windowHeight);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);*/
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTextureID, 0);
+	glBindTexture(GL_TEXTURE_2D, depthTextureID);
 }
 
 void initCube(Mesh& mesh)
@@ -443,7 +429,7 @@ int main(void)
 		glfwWindowShouldClose(window) == 0);
 
 	// Cleanup VBO and shader
-	glDeleteTextures(1, &depthTexture);
+	glDeleteTextures(1, &depthTextureID);
 	destroy(obj);
 	destroy(cube);
 
