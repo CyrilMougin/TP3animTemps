@@ -265,7 +265,7 @@ void draw(const Mesh& mesh)
 		//glUniform1i(shader->DepthTextureID, 2);
 		//
 
-		// 1rst attribute buffer : vertices
+		// 1rst attribute buffer : vertices		
 		glEnableVertexAttribArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
 		glVertexAttribPointer(
@@ -278,6 +278,7 @@ void draw(const Mesh& mesh)
 		);
 
 		// 2nd attribute buffer : UVs
+		//glDisableVertexArrayAttrib(mesh.VertexArrayID, 1);
 		glEnableVertexAttribArray(1);
 		glBindBuffer(GL_ARRAY_BUFFER, mesh.uvbId);
 		glVertexAttribPointer(
@@ -290,6 +291,7 @@ void draw(const Mesh& mesh)
 		);
 
 		// 3rd attribute buffer : normals
+		//glDisableVertexArrayAttrib(mesh.VertexArrayID, 0);
 		glEnableVertexAttribArray(2);
 		glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
 		glVertexAttribPointer(
