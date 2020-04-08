@@ -40,7 +40,7 @@ void main(){
 //			// Blue
 //			vec3(0, 0, 1);
 
-    vec3 MaterialDiffuseColor = vec3(0, 0, 1);
+    vec3 MaterialDiffuseColor = vec3(0, 1, 0);
 
 	vec3 MaterialAmbientColor = vec3(0.1,0.1,0.1) * MaterialDiffuseColor;
 	vec3 MaterialSpecularColor = vec3(0.3,0.3,0.3);

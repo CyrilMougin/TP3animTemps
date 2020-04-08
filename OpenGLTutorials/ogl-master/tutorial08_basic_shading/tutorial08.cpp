@@ -23,7 +23,6 @@ using namespace std;
 #include <common/objloader.hpp>
 #include <common/vboindexer.hpp>
 
-GLuint depthrenderbuffer;
 GLuint DepthTextureID;
 
 const int SCREEN_WIDTH = 1024;
@@ -44,6 +43,7 @@ struct Shader
 	int in_NormalLocation = 0;
 	GLuint TextureID = 0;
 	GLuint DepthTextureID = 0;
+	GLuint VertexArrayID = 0;
 };
 
 struct Mesh
@@ -58,8 +58,7 @@ struct Mesh
 	glm::mat4 ModelMatrix;
 	glm::mat4 MVP;
 	std::vector<Shader> ShaderPasses;
-	GLuint Texture = 0;
-	GLuint VertexArrayID = 0;
+	GLuint Texture = 0;	
 };
 
 Shader loadShaderPass(const std::string& vert, const std::string& frag)
@@ -68,9 +67,10 @@ Shader loadShaderPass(const std::string& vert, const std::string& frag)
 
 	shaderPass.Name = vert;
 
-	shaderPass.ID = LoadShaders(vert.c_str(), frag.c_str());	
-	glUseProgram(shaderPass.ID);
+	shaderPass.ID = LoadShaders(vert.c_str(), frag.c_str());		
 	
+	glGenVertexArrays(1, &shaderPass.VertexArrayID);
+
 	shaderPass.MatrixID = glGetUniformLocation(shaderPass.ID, "MVP");
 	shaderPass.ViewMatrixID = glGetUniformLocation(shaderPass.ID, "V");
 	shaderPass.ModelMatrixID = glGetUniformLocation(shaderPass.ID, "M");
@@ -119,6 +119,11 @@ void initDepthBuffer()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, DepthTextureID, 0);
+
+	
+
+	//glGenFramebuffers(GLsizei n, GLuint *ids);
+
 }
 
 void initCube(Mesh& mesh)
@@ -189,8 +194,7 @@ void initCube(Mesh& mesh)
 	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, halfLenght));
 	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, halfLenght));
 	for (int i = 30; i < 36; i++) mesh.norms[i] = glm::vec3(0, 1, 0);
-
-	glGenVertexArrays(1, &mesh.VertexArrayID);
+	
 	glGenBuffers(1, &mesh.vertbId);
 	glGenBuffers(1, &mesh.normbId);
 
@@ -218,8 +222,7 @@ void initCube(Mesh& mesh)
 void initObj(Mesh& mesh)
 {
 	loadOBJ("suzanne.obj", mesh.verts, mesh.uvs, mesh.norms);
-
-	glGenVertexArrays(1, &mesh.VertexArrayID);
+	
 	glGenBuffers(1, &mesh.normbId);
 	glGenBuffers(1, &mesh.vertbId);
 	glGenBuffers(1, &mesh.uvbId);
@@ -250,7 +253,7 @@ void draw(const Mesh& mesh)
 	for (auto shader = mesh.ShaderPasses.begin(); shader != mesh.ShaderPasses.end(); shader++)
 	{		
 		glUseProgram(shader->ID);
-		glBindVertexArray(mesh.VertexArrayID);
+		glBindVertexArray(shader->VertexArrayID);
 
 		//glClear(GL_COLOR_BUFFER_BIT);// | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -305,7 +308,9 @@ void draw(const Mesh& mesh)
 
 		glDrawArrays(GL_TRIANGLES, 0, mesh.verts.size());
 
-			
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
 		glBindVertexArray(0);
 		glUseProgram(0);// unbind shader
 	}
@@ -321,10 +326,11 @@ void destroy(const Mesh& mesh)
 	for (auto shader = mesh.ShaderPasses.begin(); shader != mesh.ShaderPasses.end(); shader++)
 	{
 		if (shader->ID > 0) glDeleteProgram(shader->ID);
+		if (shader->VertexArrayID > 0)glDeleteVertexArrays(1, &shader->VertexArrayID);
 	}
 
 	if (mesh.Texture > 0) glDeleteTextures(1, &mesh.Texture);
-	if (mesh.VertexArrayID > 0)glDeleteVertexArrays(1, &mesh.VertexArrayID);
+	//if (shader.VertexArrayID > 0)glDeleteVertexArrays(1, &shader.VertexArrayID);
 }
 
 int main(void)
