@@ -1,4 +1,4 @@
-// Include standard headers
+﻿// Include standard headers
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
@@ -24,8 +24,8 @@ using namespace std;
 #include <common/vboindexer.hpp>
 
 GLuint DepthTextureID;
-GLuint ColorTextureID;
-GLuint FrameBufferID;
+//GLuint ColorTextureID;
+GLuint DepthFrameBufferID;
 
 const int SCREEN_WIDTH = 1024;
 const int SCREEN_HEIGHT = 768;
@@ -49,6 +49,9 @@ struct Shader
 
 struct Mesh
 {
+	Shader shader;
+	//std::vector<Shader> ShaderPasses;
+
 	GLuint vertbId = 0;
 	std::vector<glm::vec3> verts;
 	GLuint normbId = 0;
@@ -58,7 +61,6 @@ struct Mesh
 	glm::mat4 ViewMatrix;
 	glm::mat4 ModelMatrix;
 	glm::mat4 MVP;
-	std::vector<Shader> ShaderPasses;
 	GLuint Texture = 0;	
 	GLuint VertexArrayID = 0;
 };
@@ -114,16 +116,17 @@ static const GLenum FrameBuffers[] = {
 	GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT
 };
 
-void initFrameBuffer()
+// We are just intersted in the "depth" value 
+// to use in the next pass
+void initDepthTexture()
 {
-
 	// create a RGBA color texture
-	glGenTextures(1, &ColorTextureID);
-	glBindTexture(GL_TEXTURE_2D, ColorTextureID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-		SCREEN_WIDTH, SCREEN_HEIGHT,
-		0, GL_RGBA, GL_UNSIGNED_BYTE,
-		NULL);
+	//glGenTextures(1, &ColorTextureID);
+	//glBindTexture(GL_TEXTURE_2D, ColorTextureID);
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+	//	SCREEN_WIDTH, SCREEN_HEIGHT,
+	//	0, GL_RGBA, GL_UNSIGNED_BYTE,
+	//	NULL);
 
 	// create a depth texture
 	glGenTextures(1, &DepthTextureID);
@@ -133,12 +136,7 @@ void initFrameBuffer()
 		0, GL_DEPTH_COMPONENT, GL_FLOAT,
 		NULL);
 
-	//create the framebuffer object
-	glGenFramebuffers(1, &FrameBufferID);
-	glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);
-
-	// attach color
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ColorTextureID, 0);
+	// attach color	
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, DepthTextureID, 0);
 
 	// reset FBO
@@ -214,15 +212,11 @@ void initCube(Mesh& mesh)
 	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, halfLenght));
 	for (int i = 30; i < 36; i++) mesh.norms[i] = glm::vec3(0, 1, 0);
 	
+	glGenVertexArrays(1, &mesh.VertexArrayID);
 	glGenBuffers(1, &mesh.vertbId);
 	glGenBuffers(1, &mesh.normbId);
 
-	/*glBindVertexArray(mesh.VertexArrayID);*/
-
-	// Get a handle for our "MVP" uniform
-	// Get a handle for our "MVP" uniform
-	mesh.ShaderPasses.push_back(loadShaderPass("shader.vert", "shader.frag"));
-	mesh.Texture = loadDDS("uvmap.DDS");	
+	mesh.shader = loadShaderPass("shader.vert", "shader.frag");
 
 	// VERTS
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
@@ -234,9 +228,7 @@ void initCube(Mesh& mesh)
 
 	// NORMS
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
-	glBufferData(GL_ARRAY_BUFFER, mesh.norms.size() * sizeof(glm::vec3), mesh.norms.data(), GL_STATIC_DRAW);
-
-	glGenVertexArrays(1, &mesh.VertexArrayID);
+	glBufferData(GL_ARRAY_BUFFER, mesh.norms.size() * sizeof(glm::vec3), mesh.norms.data(), GL_STATIC_DRAW);	
 }
 
 
@@ -244,14 +236,13 @@ void initObj(Mesh& mesh)
 {
 	loadOBJ("suzanne.obj", mesh.verts, mesh.uvs, mesh.norms);
 	
+	glGenVertexArrays(1, &mesh.VertexArrayID);
 	glGenBuffers(1, &mesh.normbId);
 	glGenBuffers(1, &mesh.vertbId);
 	glGenBuffers(1, &mesh.uvbId);
 	
 	// Get a handle for our "MVP" uniform
-	mesh.ShaderPasses.push_back(loadShaderPass("silhouette.vert", "silhouette.frag"));
-	mesh.ShaderPasses.push_back(loadShaderPass("silhouette2.vert", "silhouette2.frag"));	
-	mesh.Texture = loadDDS("uvmap.DDS");	
+	mesh.shader = loadShaderPass("shader.vert", "shader.frag");
 
 	// VERTS
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
@@ -263,9 +254,12 @@ void initObj(Mesh& mesh)
 
 	// NORMS
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
-	glBufferData(GL_ARRAY_BUFFER, mesh.norms.size() * sizeof(glm::vec3), mesh.norms.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, mesh.norms.size() * sizeof(glm::vec3), mesh.norms.data(), GL_STATIC_DRAW);	
+}
 
-	glGenVertexArrays(1, &mesh.VertexArrayID);
+void drawDepthBuffer(const Mesh& mesh)
+{
+
 }
 
 void draw(const Mesh& mesh)
@@ -274,64 +268,62 @@ void draw(const Mesh& mesh)
 	//glDepthFunc(GL_LESS);
 	//glDrawBuffer(GL_FRONT);	
 
-	for (auto shader = mesh.ShaderPasses.begin(); shader != mesh.ShaderPasses.end(); shader++)
-	{		
-		glUseProgram(shader->ID);
-		glBindVertexArray(mesh.VertexArrayID);
+	//glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);
 
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	glUseProgram(mesh.shader.ID);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindVertexArray(mesh.VertexArrayID);		
 
-		glUniform3f(shader->LightID, LightPos.x, LightPos.y, LightPos.z);
-		glUniformMatrix4fv(shader->MatrixID, 1, GL_FALSE, &mesh.MVP[0][0]);
-		glUniformMatrix4fv(shader->ViewMatrixID, 1, GL_FALSE, &mesh.ViewMatrix[0][0]);
-		glUniformMatrix4fv(shader->ModelMatrixID, 1, GL_FALSE, &mesh.ModelMatrix[0][0]);
+	glUniform3f(mesh.shader.LightID, LightPos.x, LightPos.y, LightPos.z);
+	glUniformMatrix4fv(mesh.shader.MatrixID, 1, GL_FALSE, &mesh.MVP[0][0]);
+	glUniformMatrix4fv(mesh.shader.ViewMatrixID, 1, GL_FALSE, &mesh.ViewMatrix[0][0]);
+	glUniformMatrix4fv(mesh.shader.ModelMatrixID, 1, GL_FALSE, &mesh.ModelMatrix[0][0]);
 
 	
-		// 1rst attribute buffer : vertices		
-		glEnableVertexAttribArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
-		glVertexAttribPointer(
-			0,                  // attribute
-			3,                  // size
-			GL_FLOAT,           // type
-			GL_FALSE,           // normalized?
-			0,                  // stride
-			(void*)0            // array buffer offset
-		);
+	// 1rst attribute buffer : vertices		
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
+	glVertexAttribPointer(
+		0,                  // attribute
+		3,                  // size
+		GL_FLOAT,           // type
+		GL_FALSE,           // normalized?
+		0,                  // stride
+		(void*)0            // array buffer offset
+	);
 
-		// 2nd attribute buffer : UVs
-		//glDisableVertexArrayAttrib(mesh.VertexArrayID, 1);
-		glEnableVertexAttribArray(1);
-		glBindBuffer(GL_ARRAY_BUFFER, mesh.uvbId);
-		glVertexAttribPointer(
-			1,                                // attribute
-			2,                                // size
-			GL_FLOAT,                         // type
-			GL_FALSE,                         // normalized?
-			0,                                // stride
-			(void*)0                          // array buffer offset
-		);
+	// 2nd attribute buffer : UVs
+	//glDisableVertexArrayAttrib(mesh.VertexArrayID, 1);
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.uvbId);
+	glVertexAttribPointer(
+		1,                                // attribute
+		2,                                // size
+		GL_FLOAT,                         // type
+		GL_FALSE,                         // normalized?
+		0,                                // stride
+		(void*)0                          // array buffer offset
+	);
 
-		// 3rd attribute buffer : normals
-		//glDisableVertexArrayAttrib(mesh.VertexArrayID, 0);
-		glEnableVertexAttribArray(2);
-		glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
-		glVertexAttribPointer(
-			2,                                // attribute
-			3,                                // size
-			GL_FLOAT,                         // type
-			GL_FALSE,                         // normalized?
-			0,                                // stride
-			(void*)0                          // array buffer offset
-		);
+	// 3rd attribute buffer : normals
+	//glDisableVertexArrayAttrib(mesh.VertexArrayID, 0);
+	glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
+	glVertexAttribPointer(
+		2,                                // attribute
+		3,                                // size
+		GL_FLOAT,                         // type
+		GL_FALSE,                         // normalized?
+		0,                                // stride
+		(void*)0                          // array buffer offset
+	);
 
-		glDrawArrays(GL_TRIANGLES, 0, mesh.verts.size());
+	glDrawArrays(GL_TRIANGLES, 0, mesh.verts.size());
 		
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glBindVertexArray(0);
-		glUseProgram(0);// unbind shader
-	}
+	glBindVertexArray(0);
+	glUseProgram(0);// unbind shader
+	glFlush();
+	
 }
 
 
@@ -340,13 +332,8 @@ void destroy(const Mesh& mesh)
 	if (mesh.vertbId > 0) glDeleteBuffers(1, &mesh.vertbId);
 	if (mesh.uvbId > 0) glDeleteBuffers(1, &mesh.uvbId);
 	if (mesh.normbId > 0) glDeleteBuffers(1, &mesh.normbId);
-
-	for (auto shader = mesh.ShaderPasses.begin(); shader != mesh.ShaderPasses.end(); shader++)
-	{
-		if (shader->ID > 0) glDeleteProgram(shader->ID);
-		if (mesh.VertexArrayID > 0)glDeleteVertexArrays(1, &mesh.VertexArrayID);
-	}
-
+	if (mesh.shader.ID > 0) glDeleteProgram(mesh.shader.ID);
+	if (mesh.VertexArrayID > 0)glDeleteVertexArrays(1, &mesh.VertexArrayID);
 	if (mesh.Texture > 0) glDeleteTextures(1, &mesh.Texture);
 	//if (shader.VertexArrayID > 0)glDeleteVertexArrays(1, &shader.VertexArrayID);
 }
@@ -357,14 +344,12 @@ Mesh obj;
 
 void render(void)
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);
+	//glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);
 	// set up render target
-	glDrawBuffers(sizeof FrameBuffers / sizeof FrameBuffers[0], FrameBuffers);
-	glDrawBuffer(GL_FRONT);
 
-	//// Clear the screen
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
+	//// Clear the screen	  
+	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+	
 	computeMatricesFromInputs();
 	glm::mat4 ProjectionMatrix = getProjectionMatrix();
 
@@ -373,17 +358,30 @@ void render(void)
 	cube.ModelMatrix = translate(cube.ModelMatrix, glm::vec3(0, 0, 2));
 	cube.MVP = ProjectionMatrix * cube.ViewMatrix * cube.ModelMatrix;
 	draw(cube);
+	drawDepthBuffer(cube);
 
 	obj.ViewMatrix = getViewMatrix();
 	obj.ModelMatrix = glm::mat4(1.0);
 	obj.ModelMatrix = translate(obj.ModelMatrix, glm::vec3(0, 0, 0));
 	obj.MVP = ProjectionMatrix * obj.ViewMatrix * obj.ModelMatrix;
 	draw(obj);
+	drawDepthBuffer(obj);
 
-	glUseProgram(0);
-	glFlush();
+	// Draw to screen
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	draw(obj);
+	draw(cube);
 
-	// Swap buffers
+	//// Draw to screen
+	//glBindFramebuffer(GL_FRAMEBUFFER, DepthFrameBufferID);
+	//glEnable(GL_DEPTH_TEST);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//draw(obj);
+	//draw(cube);
+
+
 	glfwSwapBuffers(window);
 	glfwPollEvents();
 }
@@ -408,7 +406,7 @@ int main(void)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Open a window and create its OpenGL context
-	window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Tutorial 08 - Basic Shading", NULL, NULL);
+	window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Hidden Silhouette Shader", NULL, NULL);
 	if (window == NULL) 
 	{
 		fprintf(stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n");
@@ -420,7 +418,8 @@ int main(void)
 
 	// Initialize GLEW
 	glewExperimental = true; // Needed for core profile
-	if (glewInit() != GLEW_OK) {
+	if (glewInit() != GLEW_OK) 
+	{
 		fprintf(stderr, "Failed to initialize GLEW\n");
 		getchar();
 		glfwTerminate();
@@ -450,17 +449,13 @@ int main(void)
 	//////////////////////////// TODO
 	//glEnable(GL_CULL_FACE);
 
-	initFrameBuffer();
+	initDepthTexture();
 
 	// Init meshes
 	initObj(obj);
 	initCube(cube);
 
-	do {
-
-		render();
-
-	} // Check if the ESC key was pressed or the window was closed
+	do render();
 	while (
 		glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
 		glfwWindowShouldClose(window) == 0);
