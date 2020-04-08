@@ -22,6 +22,19 @@ using namespace std;
 #include <common/objloader.hpp>
 #include <common/vboindexer.hpp>
 
+struct Shader
+{
+	GLuint ID = 0;
+	GLuint MatrixID = 0;
+	GLuint ViewMatrixID = 0;
+	GLuint ModelMatrixID = 0;
+	GLuint LightID = 0;
+	int in_PositionLocation = 0;
+	int in_UVLocation = 0;
+	int in_NormalLocation = 0;
+	GLuint TextureID = 0;
+};
+
 struct Mesh
 {
 	GLuint vertbId = 0;
@@ -30,23 +43,48 @@ struct Mesh
 	std::vector<glm::vec3> norms;
 	GLuint uvbId = 0;
 	std::vector<glm::vec2> uvs;
+		
+	glm::mat4 ViewMatrix;
+	glm::mat4 ModelMatrix;	
+	glm::mat4 MVP;
 
-	GLuint ShaderID = 0;
-	GLuint MatrixID = 0;
-	GLuint ViewMatrixID = 0;
-	GLuint ModelMatrixID = 0;
+
+	std::vector<Shader> ShaderPasses;
+
 	//GLuint trans = -1;
 	GLuint Texture = 0;
-	GLuint TextureID = 0;
-	GLuint LightID = 0;
 	GLuint VertexArrayID = 0;
 
-	int in_PositionLocation = 0;
-	int in_UVLocation = 0;
-	int in_NormalLocation = 0;
 };
 
 glm::vec3 LightPos = glm::vec3(4, 4, 4);
+
+Shader loadShaderPass(const std::string& vert, const std::string& frag)
+{
+	Shader shaderPass;
+	shaderPass.ID = LoadShaders("shader.vert", "shader.frag");
+	shaderPass.MatrixID = glGetUniformLocation(shaderPass.ID, "MVP");
+	shaderPass.ViewMatrixID = glGetUniformLocation(shaderPass.ID, "V");
+	shaderPass.ModelMatrixID = glGetUniformLocation(shaderPass.ID, "M");
+	shaderPass.LightID = glGetUniformLocation(shaderPass.ID, "LightPosition_worldspace");
+	shaderPass.TextureID = glGetUniformLocation(shaderPass.ID, "myTextureSampler");
+
+	// VERTS
+	shaderPass.in_PositionLocation = glGetAttribLocation(shaderPass.ID, "vertexPosition_modelspace");
+	glEnableVertexAttribArray(shaderPass.in_PositionLocation);
+	glVertexAttribPointer(shaderPass.in_PositionLocation, 3, GL_FLOAT, GL_FALSE, 0, 0); // Set up the vertex attributes pointer
+
+	shaderPass.in_UVLocation = glGetAttribLocation(shaderPass.ID, "vertexUV");
+	glEnableVertexAttribArray(shaderPass.in_UVLocation);
+	glVertexAttribPointer(shaderPass.in_UVLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// NORMS
+	shaderPass.in_NormalLocation = glGetAttribLocation(shaderPass.ID, "vertexNormal_modelspace");
+	glEnableVertexAttribArray(shaderPass.in_NormalLocation);
+	glVertexAttribPointer(shaderPass.in_NormalLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	return shaderPass;
+}
 
 // Bind the shader
 void bindShader(GLuint shaderID)
@@ -137,25 +175,24 @@ void initCube(Mesh& mesh)
 	glBindVertexArray(mesh.VertexArrayID);
 
 	// Get a handle for our "MVP" uniform
-	mesh.ShaderID = LoadShaders("shader.vert", "shader.frag");
-	mesh.MatrixID = glGetUniformLocation(mesh.ShaderID, "MVP");
-	mesh.ViewMatrixID = glGetUniformLocation(mesh.ShaderID, "V");
-	mesh.ModelMatrixID = glGetUniformLocation(mesh.ShaderID, "M");		
-	mesh.LightID = glGetUniformLocation(mesh.ShaderID, "LightPosition_worldspace");
+	// Get a handle for our "MVP" uniform
+	mesh.ShaderPasses.push_back(loadShaderPass("shader.vert", "shader.frag"));
+	mesh.Texture = loadDDS("uvmap.DDS");
+
+	glBindVertexArray(mesh.VertexArrayID);
 
 	// VERTS
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
 	glBufferData(GL_ARRAY_BUFFER, mesh.verts.size() * sizeof(glm::vec3), mesh.verts.data(), GL_STATIC_DRAW);
-	mesh.in_PositionLocation = glGetAttribLocation(mesh.ShaderID, "vertexPosition_modelspace");
-	glEnableVertexAttribArray(mesh.in_PositionLocation);
-	glVertexAttribPointer(mesh.in_PositionLocation, 3, GL_FLOAT, GL_FALSE, 0, 0); // Set up the vertex attributes pointer
+
+	// UVS
+	//glBindBuffer(GL_ARRAY_BUFFER, mesh.uvbId);
+	//glBufferData(GL_ARRAY_BUFFER, mesh.uvs.size() * sizeof(glm::vec3), mesh.uvs.data(), GL_STATIC_DRAW);
 
 	// NORMS
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
 	glBufferData(GL_ARRAY_BUFFER, mesh.norms.size() * sizeof(glm::vec3), mesh.norms.data(), GL_STATIC_DRAW);
-	mesh.in_NormalLocation = glGetAttribLocation(mesh.ShaderID, "vertexNormal_modelspace");
-	glEnableVertexAttribArray(mesh.in_NormalLocation);
-	glVertexAttribPointer(mesh.in_NormalLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
 }
 
 
@@ -171,174 +208,109 @@ void initObj(Mesh& mesh)
 	glBindVertexArray(mesh.VertexArrayID);
 
 	// Get a handle for our "MVP" uniform
-	mesh.ShaderID = LoadShaders("shader.vert", "shader.frag");
-	mesh.MatrixID = glGetUniformLocation(mesh.ShaderID, "MVP");
-	mesh.ViewMatrixID = glGetUniformLocation(mesh.ShaderID, "V");
-	mesh.ModelMatrixID = glGetUniformLocation(mesh.ShaderID, "M");
+	mesh.ShaderPasses.push_back(loadShaderPass("silhouette.vert", "silhouette.frag"));
+	mesh.ShaderPasses.push_back(loadShaderPass("silhouette2.vert", "silhouette2.frag"));
 	mesh.Texture = loadDDS("uvmap.DDS");
-	mesh.TextureID = glGetUniformLocation(mesh.ShaderID, "myTextureSampler");
-	mesh.LightID = glGetUniformLocation(mesh.ShaderID, "LightPosition_worldspace");
 
 	glBindVertexArray(mesh.VertexArrayID);
 
 	// VERTS
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
 	glBufferData(GL_ARRAY_BUFFER, mesh.verts.size() * sizeof(glm::vec3), mesh.verts.data(), GL_STATIC_DRAW);
-	mesh.in_PositionLocation = glGetAttribLocation(mesh.ShaderID, "vertexPosition_modelspace");	
-	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
-	glBufferData(GL_ARRAY_BUFFER, mesh.verts.size() * sizeof(glm::vec3), mesh.verts.data(), GL_STATIC_DRAW);	
 
 	// UVS
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.uvbId);
-	glBufferData(GL_ARRAY_BUFFER, mesh.uvs.size() * sizeof(glm::vec3), mesh.uvs.data(), GL_STATIC_DRAW);
-	mesh.in_UVLocation = glGetAttribLocation(mesh.ShaderID, "vertexUV");
-	glEnableVertexAttribArray(mesh.in_UVLocation);
-	glVertexAttribPointer(mesh.in_UVLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	
+	glBufferData(GL_ARRAY_BUFFER, mesh.uvs.size() * sizeof(glm::vec3), mesh.uvs.data(), GL_STATIC_DRAW);		
 
 	// NORMS
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
 	glBufferData(GL_ARRAY_BUFFER, mesh.norms.size() * sizeof(glm::vec3), mesh.norms.data(), GL_STATIC_DRAW);
-	mesh.in_NormalLocation = glGetAttribLocation(mesh.ShaderID, "vertexNormal_modelspace");
-	glEnableVertexAttribArray(mesh.in_NormalLocation);
-	glVertexAttribPointer(mesh.in_NormalLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 }
 
-void drawObj(const Mesh& mesh)	
+void draw(const Mesh& mesh)	
 {
-	bindShader(mesh.ShaderID);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
 
-	computeMatricesFromInputs();
-	glm::mat4 ProjectionMatrix = getProjectionMatrix();
-	glm::mat4 ViewMatrix = getViewMatrix();
-	glm::mat4 ModelMatrix = glm::mat4(1.0);
-	glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
-	//glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 5.0f));
+	for (auto shader = mesh.ShaderPasses.begin(); shader != mesh.ShaderPasses.end(); shader++)
+	{
+		bindShader(shader->ID);
 
-	glUniform3f(mesh.LightID, LightPos.x, LightPos.y, LightPos.z);
+		glUniform3f(shader->LightID, LightPos.x, LightPos.y, LightPos.z);
+		glUniformMatrix4fv(shader->MatrixID, 1, GL_FALSE, &mesh.MVP[0][0]);
+		glUniformMatrix4fv(shader->ViewMatrixID, 1, GL_FALSE, &mesh.ViewMatrix[0][0]);
+		glUniformMatrix4fv(shader->ModelMatrixID, 1, GL_FALSE, &mesh.ModelMatrix[0][0]);
+
+		//glUniformMatrix4fv(model.trans, 1, GL_FALSE, &translation[0][0]);
+
+		// Bind our texture in Texture Unit 0
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, mesh.Texture);
+		// Set our "myTextureSampler" sampler to use Texture Unit 0
+		glUniform1i(shader->TextureID, 0);
+
+		glBindVertexArray(mesh.VertexArrayID);
 
 
-	glUniformMatrix4fv(mesh.MatrixID, 1, GL_FALSE, &MVP[0][0]);
-	glUniformMatrix4fv(mesh.ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
-	glUniformMatrix4fv(mesh.ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
+		// 1rst attribute buffer : vertices
+		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
+		glVertexAttribPointer(
+			0,                  // attribute
+			3,                  // size
+			GL_FLOAT,           // type
+			GL_FALSE,           // normalized?
+			0,                  // stride
+			(void*)0            // array buffer offset
+		);
+
+		// 2nd attribute buffer : UVs
+		glEnableVertexAttribArray(1);
+		glBindBuffer(GL_ARRAY_BUFFER, mesh.uvbId);
+		glVertexAttribPointer(
+			1,                                // attribute
+			2,                                // size
+			GL_FLOAT,                         // type
+			GL_FALSE,                         // normalized?
+			0,                                // stride
+			(void*)0                          // array buffer offset
+		);
+
+		// 3rd attribute buffer : normals
+		glEnableVertexAttribArray(2);
+		glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
+		glVertexAttribPointer(
+			2,                                // attribute
+			3,                                // size
+			GL_FLOAT,                         // type
+			GL_FALSE,                         // normalized?
+			0,                                // stride
+			(void*)0                          // array buffer offset
+		);
+
+		glDrawArrays(GL_TRIANGLES, 0, mesh.verts.size());
+
+
+		glBindVertexArray(0);
+		unbindShader();
+	}
+}
+
+
+void destroy(const Mesh& mesh)
+{
+	if(mesh.vertbId > 0) glDeleteBuffers(1, &mesh.vertbId);
+	if (mesh.uvbId > 0) glDeleteBuffers(1, &mesh.uvbId);
+	if (mesh.normbId > 0) glDeleteBuffers(1, &mesh.normbId);
 	
-	//glUniformMatrix4fv(model.trans, 1, GL_FALSE, &translation[0][0]);
-
-	// Bind our texture in Texture Unit 0
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, mesh.Texture);
-	// Set our "myTextureSampler" sampler to use Texture Unit 0
-	glUniform1i(mesh.TextureID, 0);
-
-	glBindVertexArray(mesh.VertexArrayID);
-
-
-
-
-	// 1rst attribute buffer : vertices
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
-	glVertexAttribPointer(
-		0,                  // attribute
-		3,                  // size
-		GL_FLOAT,           // type
-		GL_FALSE,           // normalized?
-		0,                  // stride
-		(void*)0            // array buffer offset
-	);
-
-	// 2nd attribute buffer : UVs
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, mesh.uvbId);
-	glVertexAttribPointer(
-		1,                                // attribute
-		2,                                // size
-		GL_FLOAT,                         // type
-		GL_FALSE,                         // normalized?
-		0,                                // stride
-		(void*)0                          // array buffer offset
-	);
-
-	// 3rd attribute buffer : normals
-	glEnableVertexAttribArray(2);
-	glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
-	glVertexAttribPointer(
-		2,                                // attribute
-		3,                                // size
-		GL_FLOAT,                         // type
-		GL_FALSE,                         // normalized?
-		0,                                // stride
-		(void*)0                          // array buffer offset
-	);
+	for (auto shader = mesh.ShaderPasses.begin(); shader != mesh.ShaderPasses.end(); shader++)
+	{
+		if (shader->ID > 0) glDeleteProgram(shader->ID);
+	}
 	
-	glDrawArrays(GL_TRIANGLES, 0, mesh.verts.size());
-
-
-	glBindVertexArray(0);
-	unbindShader();
-}
-
-
-void drawCube(Mesh mesh)
-{
-	bindShader(mesh.ShaderID);
-
-	computeMatricesFromInputs();
-	glm::mat4 ProjectionMatrix = getProjectionMatrix();
-	glm::mat4 ViewMatrix = getViewMatrix();
-	glm::mat4 ModelMatrix = glm::mat4(1.0);
-	ModelMatrix = translate(ModelMatrix, glm::vec3(0, 0, 2));
-
-	glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;		
-
-	glUniform3f(mesh.LightID, LightPos.x, LightPos.y, LightPos.z);
-	glUniformMatrix4fv(mesh.MatrixID, 1, GL_FALSE, &MVP[0][0]);
-	glUniformMatrix4fv(mesh.ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
-	glUniformMatrix4fv(mesh.ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);		
-
-	glBindVertexArray(mesh.VertexArrayID);
-
-	// 1rst attribute buffer : vertices	
-	glEnableVertexAttribArray(mesh.in_PositionLocation);
-	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
-	glVertexAttribPointer(
-		mesh.in_PositionLocation,                  // attribute
-		3,                  // size
-		GL_FLOAT,           // type
-		GL_FALSE,           // normalized?
-		0,                  // stride
-		0            // array buffer offset
-	);
-
-
-	// 2rd attribute buffer : normals
-	glEnableVertexAttribArray(mesh.in_NormalLocation);
-	glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
-	glVertexAttribPointer(
-		mesh.in_NormalLocation,          // attribute
-		3,                                // size
-		GL_FLOAT,                         // type
-		GL_FALSE,                         // normalized?
-		0,                                // stride
-		0                          // array buffer offset
-	);
-
-	glDrawArrays(GL_TRIANGLES, 0, mesh.verts.size());
-
-	glBindVertexArray(0);
-	unbindShader();
-}
-
-
-void destroy(const Mesh& model)
-{
-	if(model.vertbId > 0) glDeleteBuffers(1, &model.vertbId);
-	if (model.uvbId > 0) glDeleteBuffers(1, &model.uvbId);
-	if (model.normbId > 0) glDeleteBuffers(1, &model.normbId);
-	if (model.ShaderID > 0) glDeleteProgram(model.ShaderID);
-	if (model.Texture > 0) glDeleteTextures(1, &model.Texture);	
-	if (model.VertexArrayID > 0)glDeleteVertexArrays(1, &model.VertexArrayID);
+	if (mesh.Texture > 0) glDeleteTextures(1, &mesh.Texture);
+	if (mesh.VertexArrayID > 0)glDeleteVertexArrays(1, &mesh.VertexArrayID);
 }
 
 int main(void)
@@ -390,8 +362,14 @@ int main(void)
 	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 
 	// Enable depth test
-	glEnable(GL_DEPTH_TEST);	
-	glDepthFunc(GL_LESS);
+	//glEnable(GL_DEPTH_TEST);	
+	//glDepthFunc(GL_LESS);
+	
+	//////////////////////////// TODO
+	//////////////////////////// TODO
+	//////////////////////////// TODO
+	//////////////////////////// TODO
+	//////////////////////////// TODO
 	//glEnable(GL_CULL_FACE);
 
 
@@ -400,7 +378,6 @@ int main(void)
 	// Load the texture
 	Mesh obj;
 	initObj(obj);
-
 
 	// INIT CUBE
 	Mesh cube;
@@ -411,26 +388,25 @@ int main(void)
 
 		// Clear the screen
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_LESS);
-
-
-		/*
-			GLuint vertb,
-			GLuint normb,
-			GLuint uvb,
-			GLuint trans,
-			GLuint TextureID,
-		*/
-		drawObj(obj);
-		drawCube(cube);
-
+		
+		computeMatricesFromInputs();
+		glm::mat4 ProjectionMatrix = getProjectionMatrix();
+		
+		cube.ViewMatrix = getViewMatrix();
+		cube.ModelMatrix = glm::mat4(1.0);
+		cube.ModelMatrix = translate(cube.ModelMatrix, glm::vec3(0, 0, 2));
+		cube.MVP = ProjectionMatrix * cube.ViewMatrix * cube.ModelMatrix;		
+		draw(cube);		
+		
+		obj.ViewMatrix = getViewMatrix();
+		obj.ModelMatrix = glm::mat4(1.0);
+		obj.ModelMatrix = translate(obj.ModelMatrix, glm::vec3(0, 0, 0));
+		obj.MVP = ProjectionMatrix * obj.ViewMatrix * obj.ModelMatrix;
+		draw(obj);
 
 		// Swap buffers
 		glfwSwapBuffers(window);
 		glfwPollEvents();
-
-
 	
 	} // Check if the ESC key was pressed or the window was closed
 	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
