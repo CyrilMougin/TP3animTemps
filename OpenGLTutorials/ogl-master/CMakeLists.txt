@@ -114,6 +114,12 @@ configure_file(
 	COPYONLY
 )	
 
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/tutorial08_basic_shading/uvmap.DDS    
+	${CMAKE_CURRENT_BINARY_DIR}/uvmap.DDS
+	COPYONLY
+)	
+
 
 
 
