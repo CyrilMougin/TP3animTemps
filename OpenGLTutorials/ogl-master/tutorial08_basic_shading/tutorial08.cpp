@@ -32,6 +32,7 @@ glm::vec3 LightPos = glm::vec3(4, 4, 4);
 
 struct Shader
 {
+	std::string Name = "";
 	GLuint ID = 0;
 	GLuint MatrixID = 0;
 	GLuint ViewMatrixID = 0;
@@ -64,6 +65,7 @@ Shader loadShaderPass(const std::string& vert, const std::string& frag)
 {
 	Shader shaderPass;
 
+	shaderPass.Name = vert;
 
 	shaderPass.ID = LoadShaders(vert.c_str(), frag.c_str());
 	shaderPass.MatrixID = glGetUniformLocation(shaderPass.ID, "MVP");

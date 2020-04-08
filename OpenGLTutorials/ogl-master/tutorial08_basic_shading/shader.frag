@@ -30,7 +30,7 @@ void main(){
 	vec3 LightColor = vec3(1,1,1);
 	float LightPower = 50.0f;
 	
-//	float depth = gl_FragCoord.z;	
+	float depth = gl_FragCoord.z;	
 
 	// Material properties
 //    vec3 MaterialDiffuseColor = 
@@ -69,6 +69,7 @@ void main(){
 	//  - Looking elsewhere -> < 1
 	float cosAlpha = clamp( dot( E,R ), 0,1 );
 		
+
 	color = 
 		// Ambient : simulates indirect lighting
 		MaterialAmbientColor +

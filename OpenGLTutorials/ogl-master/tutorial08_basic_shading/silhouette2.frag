@@ -75,12 +75,12 @@ void main(){
 	// TODO
 	if (!(zdepth < gl_FragCoord.z)) return;	
 
-	color = 
-		// Ambient : simulates indirect lighting
-		MaterialAmbientColor +
-		// Diffuse : "color" of the object
-		MaterialDiffuseColor * LightColor * LightPower * cosTheta / (distance*distance) +
-		// Specular : reflective highlight, like a mirror
-		MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha,5) / (distance*distance);
+	color = vec3(1, 0, 0);
+//		// Ambient : simulates indirect lighting
+//		MaterialAmbientColor +
+//		// Diffuse : "color" of the object
+//		MaterialDiffuseColor * LightColor * LightPower * cosTheta / (distance*distance) +
+//		// Specular : reflective highlight, like a mirror
+//		MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha,5) / (distance*distance);
 
 }
