@@ -34,14 +34,14 @@ void main(){
 
 	color = vec3(0, 1, 0);
 	return;
-
-	// Material properties
-//    vec3 MaterialDiffuseColor = 
-//		mod(floor(100.0f * UV.x) + floor(100.0f * UV.y), 2.0) == 0.0 ?
-//			// Yellow
-//			vec3(1, 1, 0) : 
-//			// Blue
-//			vec3(0, 0, 1);
+//
+//	// Material properties
+////    vec3 MaterialDiffuseColor = 
+////		mod(floor(100.0f * UV.x) + floor(100.0f * UV.y), 2.0) == 0.0 ?
+////			// Yellow
+////			vec3(1, 1, 0) : 
+////			// Blue
+////			vec3(0, 0, 1);
 
     vec3 MaterialDiffuseColor = vec3(0, 0, 1);
 
@@ -71,7 +71,9 @@ void main(){
 	//  - Looking into the reflection -> 1
 	//  - Looking elsewhere -> < 1
 	float cosAlpha = clamp( dot( E,R ), 0,1 );
-		
+	
+//	float zdepth = texture(depthTexture, UV).r;
+//	if (zdepth >= gl_FragCoord.z) return;
 
 	color = 
 		// Ambient : simulates indirect lighting
