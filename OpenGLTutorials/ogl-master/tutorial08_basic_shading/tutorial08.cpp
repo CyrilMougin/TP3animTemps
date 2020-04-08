@@ -24,6 +24,8 @@ using namespace std;
 #include <common/vboindexer.hpp>
 
 GLuint DepthTextureID;
+GLuint ColorTextureID;
+GLuint FrameBufferID;
 
 const int SCREEN_WIDTH = 1024;
 const int SCREEN_HEIGHT = 768;
@@ -108,22 +110,51 @@ Shader loadShaderPass(const std::string& vert, const std::string& frag)
 //	glUseProgram(0);
 //}
 
-void initDepthBuffer()
+static const GLenum FrameBuffers[] = {
+	GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT
+};
+
+void initFrameBuffer()
 {
+	//glGenTextures(1, &DepthTextureID);
+	//glBindTexture(GL_TEXTURE_2D, DepthTextureID);
+
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	//glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, DepthTextureID, 0);
+
+	// generate a framebuffer 
+	//GLuint colorTex, depthTex, fbo;
+
+	// create a RGBA color texture
+	glGenTextures(1, &ColorTextureID);
+	glBindTexture(GL_TEXTURE_2D, ColorTextureID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+		SCREEN_WIDTH, SCREEN_HEIGHT,
+		0, GL_RGBA, GL_UNSIGNED_BYTE,
+		NULL);
+
+	// create a depth texture
 	glGenTextures(1, &DepthTextureID);
 	glBindTexture(GL_TEXTURE_2D, DepthTextureID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+		SCREEN_WIDTH, SCREEN_HEIGHT,
+		0, GL_DEPTH_COMPONENT, GL_FLOAT,
+		NULL);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	//create the framebuffer object
+	glGenFramebuffers(1, &FrameBufferID);
+	glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);
+
+	// attach color
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ColorTextureID, 0);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, DepthTextureID, 0);
 
-	
-
-	//glGenFramebuffers(GLsizei n, GLuint *ids);
-
+	// reset FBO
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void initCube(Mesh& mesh)
@@ -255,7 +286,7 @@ void draw(const Mesh& mesh)
 		glUseProgram(shader->ID);
 		glBindVertexArray(shader->VertexArrayID);
 
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		glUniform3f(shader->LightID, LightPos.x, LightPos.y, LightPos.z);
 		glUniformMatrix4fv(shader->MatrixID, 1, GL_FALSE, &mesh.MVP[0][0]);
@@ -307,10 +338,11 @@ void draw(const Mesh& mesh)
 		);
 
 		glDrawArrays(GL_TRIANGLES, 0, mesh.verts.size());
-
-		glDisableVertexAttribArray(0);
-		glDisableVertexAttribArray(1);
-		glDisableVertexAttribArray(2);
+		
+		//glDisableVertexAttribArray(0);
+		//glDisableVertexAttribArray(1);
+		//glDisableVertexAttribArray(2);
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 		glBindVertexArray(0);
 		glUseProgram(0);// unbind shader
 	}
@@ -332,6 +364,41 @@ void destroy(const Mesh& mesh)
 	if (mesh.Texture > 0) glDeleteTextures(1, &mesh.Texture);
 	//if (shader.VertexArrayID > 0)glDeleteVertexArrays(1, &shader.VertexArrayID);
 }
+
+
+Mesh cube;
+Mesh obj;
+
+void render(void)
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);
+	// set up render target
+	glDrawBuffers(sizeof FrameBuffers / sizeof FrameBuffers[0], FrameBuffers);
+
+	//// Clear the screen
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	computeMatricesFromInputs();
+	glm::mat4 ProjectionMatrix = getProjectionMatrix();
+
+	cube.ViewMatrix = getViewMatrix();
+	cube.ModelMatrix = glm::mat4(1.0);
+	cube.ModelMatrix = translate(cube.ModelMatrix, glm::vec3(0, 0, 2));
+	cube.MVP = ProjectionMatrix * cube.ViewMatrix * cube.ModelMatrix;
+	draw(cube);
+
+	obj.ViewMatrix = getViewMatrix();
+	obj.ModelMatrix = glm::mat4(1.0);
+	obj.ModelMatrix = translate(obj.ModelMatrix, glm::vec3(0, 0, 0));
+	obj.MVP = ProjectionMatrix * obj.ViewMatrix * obj.ModelMatrix;
+	draw(obj);
+
+	// Swap buffers
+	glfwSwapBuffers(window);
+	glfwPollEvents();
+}
+
+
 
 int main(void)
 {
@@ -393,41 +460,15 @@ int main(void)
 	//////////////////////////// TODO
 	//glEnable(GL_CULL_FACE);
 
-	initDepthBuffer();
+	initFrameBuffer();
 
-	// INIT OBJ
-	// Read our .obj file
-	// Load the texture
-	Mesh obj;
+	// Init meshes
 	initObj(obj);
-
-	// INIT CUBE
-	Mesh cube;
 	initCube(cube);
 
 	do {
 
-		// Clear the screen
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-		computeMatricesFromInputs();
-		glm::mat4 ProjectionMatrix = getProjectionMatrix();
-
-		cube.ViewMatrix = getViewMatrix();
-		cube.ModelMatrix = glm::mat4(1.0);
-		cube.ModelMatrix = translate(cube.ModelMatrix, glm::vec3(0, 0, 2));
-		cube.MVP = ProjectionMatrix * cube.ViewMatrix * cube.ModelMatrix;
-		draw(cube);
-
-		obj.ViewMatrix = getViewMatrix();
-		obj.ModelMatrix = glm::mat4(1.0);
-		obj.ModelMatrix = translate(obj.ModelMatrix, glm::vec3(0, 0, 0));
-		obj.MVP = ProjectionMatrix * obj.ViewMatrix * obj.ModelMatrix;
-		draw(obj);
-
-		// Swap buffers
-		glfwSwapBuffers(window);
-		glfwPollEvents();
+		render();
 
 	} // Check if the ESC key was pressed or the window was closed
 	while (
