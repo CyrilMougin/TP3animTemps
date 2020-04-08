@@ -30,9 +30,11 @@ void main(){
 	vec3 LightColor = vec3(1,1,1);
 	float LightPower = 50.0f;
 	
-	float depth = gl_FragCoord.z;
-	
+	color = vec3(0, 1, 0);
 	return;
+
+//	float depth = gl_FragCoord.z;
+	
 
 	// Material properties
 //    vec3 MaterialDiffuseColor = 
@@ -71,15 +73,19 @@ void main(){
 	//  - Looking elsewhere -> < 1
 	float cosAlpha = clamp( dot( E,R ), 0,1 );
 		
-//	float zdepth = texture(depthTexture, UV).r;	
-//	if (zdepth < gl_FragCoord.z) return;	
+//	float zdepth = texture(depthTexture, UV).r;
+	
+	color = vec3(0, 1, 0);
+	return;
 
-	color = 
-		// Ambient : simulates indirect lighting
-		MaterialAmbientColor +
-		// Diffuse : "color" of the object
-		MaterialDiffuseColor * LightColor * LightPower * cosTheta / (distance*distance) +
-		// Specular : reflective highlight, like a mirror
-		MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha,5) / (distance*distance);
+//	if (zdepth >= gl_FragCoord.z) return;	
+//
+//	color = vec3(1, 0, 0);
+//		// Ambient : simulates indirect lighting
+//		MaterialAmbientColor +
+//		// Diffuse : "color" of the object
+//		MaterialDiffuseColor * LightColor * LightPower * cosTheta / (distance*distance) +
+//		// Specular : reflective highlight, like a mirror
+//		MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha,5) / (distance*distance);
 
 }
