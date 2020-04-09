@@ -117,21 +117,25 @@ void initFrameBuffer()
 		SCREEN_WIDTH, SCREEN_HEIGHT,
 		0, GL_RGBA, GL_UNSIGNED_BYTE,
 		NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// create a depth texture
 	glGenTextures(1, &DepthTextureID);
 	glBindTexture(GL_TEXTURE_2D, DepthTextureID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-		SCREEN_WIDTH, SCREEN_HEIGHT,
-		0, GL_DEPTH_COMPONENT, GL_FLOAT,
-		NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 
 	//create the framebuffer object
 	glGenFramebuffers(1, &FrameBufferID);
 	glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);
 
 	// attach color
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ColorTextureID, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ColorTextureID, 0);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, DepthTextureID, 0);
 
 	// reset FBO
@@ -258,8 +262,16 @@ void draw(const Mesh& mesh, const Shader& shader)
 	glUniformMatrix4fv(shader.MatrixID, 1, GL_FALSE, &mesh.MVP[0][0]);
 	glUniformMatrix4fv(shader.ViewMatrixID, 1, GL_FALSE, &mesh.ViewMatrix[0][0]);
 	glUniformMatrix4fv(shader.ModelMatrixID, 1, GL_FALSE, &mesh.ModelMatrix[0][0]);
-	glUniform1i(shader.DepthTextureID, DepthTextureID);
-	glUniform1i(shader.ColorTextureID, ColorTextureID);	
+	
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, DepthTextureID);	
+	glUniform1i(shader.DepthTextureID, 1);
+	
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, ColorTextureID);
+	glUniform1i(shader.ColorTextureID, 2);
+	
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// 1rst attribute buffer : vertices		
 	glEnableVertexAttribArray(0);
@@ -329,7 +341,6 @@ void render(void)
 	//glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);
 	// set up render target
 	
-	
 	computeMatricesFromInputs();
 	glm::mat4 ProjectionMatrix = getProjectionMatrix();
 
@@ -344,33 +355,29 @@ void render(void)
 	obj.MVP = ProjectionMatrix * obj.ViewMatrix * obj.ModelMatrix;
 
 	// Draw to screen
+	
+	// Bind to invisible frame buffer to draw shadows
+	glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);	
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
-	
-	// Bind to invisible frame buffer
-	glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);	
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+	draw(cube, DefaultShader);
 	draw(obj, DefaultShader);
-	//draw(cube, DefaultShader);	
-
 
 	// Bind to default fbuf:
-	// Combine invisible with visible silhouette frame buffer
+	// Draw to screen using depthTexture as information to draw the silhouette
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); 
-	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);	
-	glDrawBuffer(GL_BACK);
-
-	//draw(obj, SilhouetteShader);
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, FrameBufferID);
-	glReadBuffer(GL_COLOR_ATTACHMENT0); /* Use Color Attachment 0 as color src. */
-	/* Copy the color and depth buffer from your FBO to the default framebuffer       */
-	glBlitFramebuffer(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
-		0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
-		GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
-		GL_NEAREST);
+	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);		
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	draw(obj, DefaultShader);
+	draw(cube, DefaultShader);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_GREATER);
+	draw(obj, SilhouetteShader);
 
 	glfwSwapBuffers(window);
 	glfwPollEvents();

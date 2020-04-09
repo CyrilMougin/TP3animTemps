@@ -21,3 +21,6 @@ void main()
         FragColor = texelFetch(Color1, texcoord, 0);
     }
 }
+
+uniform sampler2D DepthTexture;
+uniform sampler2D ColorTexture;

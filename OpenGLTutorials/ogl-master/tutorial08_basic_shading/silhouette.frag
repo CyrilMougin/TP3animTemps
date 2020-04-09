@@ -18,15 +18,26 @@ in vec3 LightDirection_cameraspace;
 out vec4 color;
 
 // Values that stay constant for the whole mesh.
+//uniform sampler2DShadow
 uniform sampler2D DepthTexture;
-uniform sampler2D ColorTexture;
 uniform mat4 MV;
 uniform vec3 LightPosition_worldspace;
 
+float near = 0.01; 
+float far  = 100f; 
 
-void main()
+float LinearizeDepth(float depth) 
 {
-	color = vec4(1, 0, 0, 1);
-	vec4 col = texture(ColorTexture, UV);	
-	color = vec4(col.r/2, col.g/2, col.b/2, 1);
+    float z = depth * 2.0 - 1.0; // back to NDC 
+    return (2.0 * near * far) / (far + near - z * (far - near));	
 }
+
+void main(){
+		
+	color.rgb = 
+		vec3(
+			LinearizeDepth(texelFetch(DepthTexture, ivec2(gl_FragCoord.xy), 0).r),
+			LinearizeDepth(texelFetch(DepthTexture, ivec2(gl_FragCoord.xy), 0).g),
+			LinearizeDepth(texelFetch(DepthTexture, ivec2(gl_FragCoord.xy), 0).b));
+}
+  
