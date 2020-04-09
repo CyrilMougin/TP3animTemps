@@ -91,28 +91,17 @@ configure_file(
 )	
 
 configure_file(
-	${CMAKE_CURRENT_SOURCE_DIR}/tutorial08_basic_shading/silhouette.vert     
+	${CMAKE_CURRENT_SOURCE_DIR}/tutorial08_basic_shading/silhouette.vert
 	${CMAKE_CURRENT_BINARY_DIR}/silhouette.vert
 	COPYONLY
 )	
 
 configure_file(
-	${CMAKE_CURRENT_SOURCE_DIR}/tutorial08_basic_shading/silhouette.frag     
+	${CMAKE_CURRENT_SOURCE_DIR}/tutorial08_basic_shading/silhouette.frag   
 	${CMAKE_CURRENT_BINARY_DIR}/silhouette.frag
 	COPYONLY
 )	
 
-configure_file(
-	${CMAKE_CURRENT_SOURCE_DIR}/tutorial08_basic_shading/silhouette2.vert     
-	${CMAKE_CURRENT_BINARY_DIR}/silhouette2.vert
-	COPYONLY
-)	
-
-configure_file(
-	${CMAKE_CURRENT_SOURCE_DIR}/tutorial08_basic_shading/silhouette2.frag     
-	${CMAKE_CURRENT_BINARY_DIR}/silhouette2.frag
-	COPYONLY
-)	
 
 configure_file(
 	${CMAKE_CURRENT_SOURCE_DIR}/tutorial08_basic_shading/uvmap.DDS    

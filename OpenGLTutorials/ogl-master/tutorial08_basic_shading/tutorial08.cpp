@@ -23,15 +23,6 @@ using namespace std;
 #include <common/objloader.hpp>
 #include <common/vboindexer.hpp>
 
-GLuint DepthTextureID;
-//GLuint ColorTextureID;
-GLuint DepthFrameBufferID;
-
-const int SCREEN_WIDTH = 1024;
-const int SCREEN_HEIGHT = 768;
-
-glm::vec3 LightPos = glm::vec3(4, 4, 4);
-
 struct Shader
 {
 	std::string Name = "";
@@ -45,13 +36,17 @@ struct Shader
 	int in_NormalLocation = 0;
 	GLuint TextureID = 0;
 	GLuint DepthTextureID = 0;
+	GLuint ColorTextureID = 0;
+
+	//GLuint Depth0 = 0;
+	//GLuint Depth1 = 0;
+	//GLuint Color0 = 0;
+	//GLuint Color1 = 0;
 };
 
 struct Mesh
-{
-	Shader shader;
+{	
 	//std::vector<Shader> ShaderPasses;
-
 	GLuint vertbId = 0;
 	std::vector<glm::vec3> verts;
 	GLuint normbId = 0;
@@ -65,30 +60,40 @@ struct Mesh
 	GLuint VertexArrayID = 0;
 };
 
+Shader DefaultShader;
+Shader CombineShader;
+Shader SilhouetteShader;
+
+GLuint FrameBufferID;
+GLuint DepthTextureID;
+GLuint ColorTextureID;
+
+const int SCREEN_WIDTH = 1024;
+const int SCREEN_HEIGHT = 768;
+
+glm::vec3 LightPos = glm::vec3(4, 4, 4);
+
 Shader loadShaderPass(const std::string& vert, const std::string& frag)
 {
 	Shader shaderPass;
-
 	shaderPass.Name = vert;
-
-	shaderPass.ID = LoadShaders(vert.c_str(), frag.c_str());		
-	
-	/*glGenVertexArrays(1, &shaderPass.VertexArrayID);*/
+	shaderPass.ID = LoadShaders(vert.c_str(), frag.c_str());
+	glUseProgram(shaderPass.ID);
 
 	shaderPass.MatrixID = glGetUniformLocation(shaderPass.ID, "MVP");
 	shaderPass.ViewMatrixID = glGetUniformLocation(shaderPass.ID, "V");
 	shaderPass.ModelMatrixID = glGetUniformLocation(shaderPass.ID, "M");
 	shaderPass.LightID = glGetUniformLocation(shaderPass.ID, "LightPosition_worldspace");
-	shaderPass.DepthTextureID = glGetUniformLocation(shaderPass.ID, "depthTexture");	
+	shaderPass.DepthTextureID = glGetUniformLocation(shaderPass.ID, "DepthTexture");		
+	shaderPass.ColorTextureID = glGetUniformLocation(shaderPass.ID, "ColorTexture");
 	
-
 	// VERTS
 	shaderPass.in_PositionLocation = glGetAttribLocation(shaderPass.ID, "vertexPosition_modelspace");
 	glEnableVertexAttribArray(shaderPass.in_PositionLocation);
 	glVertexAttribPointer(shaderPass.in_PositionLocation, 3, GL_FLOAT, GL_FALSE, 0, 0); // Set up the vertex attributes pointer
 
 	// UVS
-	shaderPass.in_UVLocation = glGetAttribLocation(shaderPass.ID, "vertexUV");
+	shaderPass.in_UVLocation = glGetAttribLocation(shaderPass.ID, "vertexUV_modelspace");
 	glEnableVertexAttribArray(shaderPass.in_UVLocation);
 	glVertexAttribPointer(shaderPass.in_UVLocation, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
@@ -97,36 +102,21 @@ Shader loadShaderPass(const std::string& vert, const std::string& frag)
 	glEnableVertexAttribArray(shaderPass.in_NormalLocation);
 	glVertexAttribPointer(shaderPass.in_NormalLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
+	glUseProgram(0);
 	return shaderPass;
 }
 
-// Bind the shader
-//void bindShader(GLuint shaderID)
-//{
-//	glUseProgram(shaderID);
-//}
-//
-//// Unbind the shader
-//void unbindShader()
-//{
-//	glUseProgram(0);
-//}
-
-static const GLenum FrameBuffers[] = {
-	GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT
-};
-
 // We are just intersted in the "depth" value 
 // to use in the next pass
-void initDepthTexture()
+void initFrameBuffer()
 {
 	// create a RGBA color texture
-	//glGenTextures(1, &ColorTextureID);
-	//glBindTexture(GL_TEXTURE_2D, ColorTextureID);
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-	//	SCREEN_WIDTH, SCREEN_HEIGHT,
-	//	0, GL_RGBA, GL_UNSIGNED_BYTE,
-	//	NULL);
+	glGenTextures(1, &ColorTextureID);
+	glBindTexture(GL_TEXTURE_2D, ColorTextureID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+		SCREEN_WIDTH, SCREEN_HEIGHT,
+		0, GL_RGBA, GL_UNSIGNED_BYTE,
+		NULL);
 
 	// create a depth texture
 	glGenTextures(1, &DepthTextureID);
@@ -136,7 +126,12 @@ void initDepthTexture()
 		0, GL_DEPTH_COMPONENT, GL_FLOAT,
 		NULL);
 
-	// attach color	
+	//create the framebuffer object
+	glGenFramebuffers(1, &FrameBufferID);
+	glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);
+
+	// attach color
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ColorTextureID, 0);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, DepthTextureID, 0);
 
 	// reset FBO
@@ -214,9 +209,7 @@ void initCube(Mesh& mesh)
 	
 	glGenVertexArrays(1, &mesh.VertexArrayID);
 	glGenBuffers(1, &mesh.vertbId);
-	glGenBuffers(1, &mesh.normbId);
-
-	mesh.shader = loadShaderPass("shader.vert", "shader.frag");
+	glGenBuffers(1, &mesh.normbId);	
 
 	// VERTS
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
@@ -241,8 +234,7 @@ void initObj(Mesh& mesh)
 	glGenBuffers(1, &mesh.vertbId);
 	glGenBuffers(1, &mesh.uvbId);
 	
-	// Get a handle for our "MVP" uniform
-	mesh.shader = loadShaderPass("shader.vert", "shader.frag");
+	// Get a handle for our "MVP" uniform	
 
 	// VERTS
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
@@ -257,29 +249,18 @@ void initObj(Mesh& mesh)
 	glBufferData(GL_ARRAY_BUFFER, mesh.norms.size() * sizeof(glm::vec3), mesh.norms.data(), GL_STATIC_DRAW);	
 }
 
-void drawDepthBuffer(const Mesh& mesh)
+void draw(const Mesh& mesh, const Shader& shader)
 {
-
-}
-
-void draw(const Mesh& mesh)
-{
-	//glEnable(GL_DEPTH_TEST);
-	//glDepthFunc(GL_LESS);
-	//glDrawBuffer(GL_FRONT);	
-
-	//glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);
-
-	glUseProgram(mesh.shader.ID);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glUseProgram(shader.ID);
 	glBindVertexArray(mesh.VertexArrayID);		
 
-	glUniform3f(mesh.shader.LightID, LightPos.x, LightPos.y, LightPos.z);
-	glUniformMatrix4fv(mesh.shader.MatrixID, 1, GL_FALSE, &mesh.MVP[0][0]);
-	glUniformMatrix4fv(mesh.shader.ViewMatrixID, 1, GL_FALSE, &mesh.ViewMatrix[0][0]);
-	glUniformMatrix4fv(mesh.shader.ModelMatrixID, 1, GL_FALSE, &mesh.ModelMatrix[0][0]);
+	glUniform3f(shader.LightID, LightPos.x, LightPos.y, LightPos.z);
+	glUniformMatrix4fv(shader.MatrixID, 1, GL_FALSE, &mesh.MVP[0][0]);
+	glUniformMatrix4fv(shader.ViewMatrixID, 1, GL_FALSE, &mesh.ViewMatrix[0][0]);
+	glUniformMatrix4fv(shader.ModelMatrixID, 1, GL_FALSE, &mesh.ModelMatrix[0][0]);
+	glUniform1i(shader.DepthTextureID, DepthTextureID);
+	glUniform1i(shader.ColorTextureID, ColorTextureID);	
 
-	
 	// 1rst attribute buffer : vertices		
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
@@ -329,13 +310,14 @@ void draw(const Mesh& mesh)
 
 void destroy(const Mesh& mesh)
 {
-	if (mesh.vertbId > 0) glDeleteBuffers(1, &mesh.vertbId);
-	if (mesh.uvbId > 0) glDeleteBuffers(1, &mesh.uvbId);
-	if (mesh.normbId > 0) glDeleteBuffers(1, &mesh.normbId);
-	if (mesh.shader.ID > 0) glDeleteProgram(mesh.shader.ID);
-	if (mesh.VertexArrayID > 0)glDeleteVertexArrays(1, &mesh.VertexArrayID);
-	if (mesh.Texture > 0) glDeleteTextures(1, &mesh.Texture);
-	//if (shader.VertexArrayID > 0)glDeleteVertexArrays(1, &shader.VertexArrayID);
+	if (((int)mesh.vertbId) > 0) glDeleteBuffers(1, &mesh.vertbId);
+	if (((int)mesh.uvbId) > 0) glDeleteBuffers(1, &mesh.uvbId);
+	if (((int)mesh.normbId) > 0) glDeleteBuffers(1, &mesh.normbId);
+	if (((int)mesh.VertexArrayID) > 0)glDeleteVertexArrays(1, &mesh.VertexArrayID);
+	if (((int)mesh.Texture) > 0) glDeleteTextures(1, &mesh.Texture);
+	if (((int)DefaultShader.ID) > 0) glDeleteProgram(DefaultShader.ID);
+	if (((int)CombineShader.ID) > 0) glDeleteProgram(CombineShader.ID);
+	if (((int)SilhouetteShader.ID) > 0) glDeleteProgram(SilhouetteShader.ID);
 }
 
 
@@ -346,9 +328,7 @@ void render(void)
 {
 	//glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);
 	// set up render target
-
-	//// Clear the screen	  
-	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+	
 	
 	computeMatricesFromInputs();
 	glm::mat4 ProjectionMatrix = getProjectionMatrix();
@@ -357,40 +337,47 @@ void render(void)
 	cube.ModelMatrix = glm::mat4(1.0);
 	cube.ModelMatrix = translate(cube.ModelMatrix, glm::vec3(0, 0, 2));
 	cube.MVP = ProjectionMatrix * cube.ViewMatrix * cube.ModelMatrix;
-	draw(cube);
-	drawDepthBuffer(cube);
 
 	obj.ViewMatrix = getViewMatrix();
 	obj.ModelMatrix = glm::mat4(1.0);
 	obj.ModelMatrix = translate(obj.ModelMatrix, glm::vec3(0, 0, 0));
 	obj.MVP = ProjectionMatrix * obj.ViewMatrix * obj.ModelMatrix;
-	draw(obj);
-	drawDepthBuffer(obj);
 
 	// Draw to screen
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glEnable(GL_DEPTH_TEST);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	draw(obj);
-	draw(cube);
+	glDepthFunc(GL_LESS);
+	
+	// Bind to invisible frame buffer
+	glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);	
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+	draw(obj, DefaultShader);
+	//draw(cube, DefaultShader);	
 
-	//// Draw to screen
-	//glBindFramebuffer(GL_FRAMEBUFFER, DepthFrameBufferID);
-	//glEnable(GL_DEPTH_TEST);
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	//draw(obj);
-	//draw(cube);
 
+	// Bind to default fbuf:
+	// Combine invisible with visible silhouette frame buffer
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); 
+	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);	
+	glDrawBuffer(GL_BACK);
+
+	//draw(obj, SilhouetteShader);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, FrameBufferID);
+	glReadBuffer(GL_COLOR_ATTACHMENT0); /* Use Color Attachment 0 as color src. */
+	/* Copy the color and depth buffer from your FBO to the default framebuffer       */
+	glBlitFramebuffer(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
+		0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
+		GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
+		GL_NEAREST);
 
 	glfwSwapBuffers(window);
 	glfwPollEvents();
 }
 
-
-
 int main(void)
 {
-
 	// Initialise GLFW
 	if (!glfwInit())
 	{
@@ -449,11 +436,14 @@ int main(void)
 	//////////////////////////// TODO
 	//glEnable(GL_CULL_FACE);
 
-	initDepthTexture();
+	initFrameBuffer();
 
 	// Init meshes
 	initObj(obj);
 	initCube(cube);
+	DefaultShader = loadShaderPass("shader.vert", "shader.frag");
+	//CombineShader = loadShaderPass("combine.vert", "combine.frag");
+	SilhouetteShader = loadShaderPass("silhouette.vert", "silhouette.frag");
 
 	do render();
 	while (

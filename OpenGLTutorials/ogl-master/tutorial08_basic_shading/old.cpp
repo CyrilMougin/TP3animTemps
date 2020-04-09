@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
+#include <string>
 
 // Include GLEW
 #include <GL/glew.h>
@@ -22,212 +23,372 @@ using namespace std;
 #include <common/objloader.hpp>
 #include <common/vboindexer.hpp>
 
+GLuint DepthTextureID;
+GLuint ColorTextureID;
+GLuint FrameBufferID;
 
-void initCube(
-	GLuint& vertbId,
-	std::vector<glm::vec3>& verts,
-	GLuint& normbId,
-	std::vector<glm::vec3>& norms)
+const int SCREEN_WIDTH = 1024;
+const int SCREEN_HEIGHT = 768;
+
+glm::vec3 LightPos = glm::vec3(4, 4, 4);
+
+struct Shader
 {
-	verts[0] = glm::vec3(-0.5, 0, 0.5);
-	verts[1] = glm::vec3(-0.5, 1.0, 0.5);
-	verts[2] = glm::vec3(0.5, 1.0, 0.5);
-	verts[3] = glm::vec3(0.5, 0, 0.5);
+	std::string Name = "";
+	GLuint ID = 0;
+	GLuint MatrixID = 0;
+	GLuint ViewMatrixID = 0;
+	GLuint ModelMatrixID = 0;
+	GLuint LightID = 0;
+	int in_PositionLocation = 0;
+	int in_UVLocation = 0;
+	int in_NormalLocation = 0;
+	GLuint TextureID = 0;
+	GLuint DepthTextureID = 0;
+};
 
-	verts[4] = glm::vec3(-0.5, 0, 0.5);
-	verts[5] = glm::vec3(0.5, 0, 0.5);
-	verts[6] = glm::vec3(0.5, 0, -0.5);
-	verts[7] = glm::vec3(-0.5, 0, -0.5);
-
-	verts[8] = glm::vec3(-0.5, 0, 0.5);
-	verts[9] = glm::vec3(-0.5, 0, -0.5);
-	verts[10] = glm::vec3(-0.5, 1.0, -0.5);
-	verts[11] = glm::vec3(-0.5, 1.0, 0.5);
-
-	verts[12] = glm::vec3(-0.5, 1.0, 0.5);
-	verts[13] = glm::vec3(0.5, 1.0, 0.5);
-	verts[14] = glm::vec3(0.5, 1.0, -0.5);
-	verts[15] = glm::vec3(-0.5, 1.0, -0.5);
-
-	verts[16] = glm::vec3(-0.5, 0, -0.5);
-	verts[17] = glm::vec3(0.5, 0, -0.5);
-	verts[18] = glm::vec3(0.5, 1.0, -0.5);
-	verts[19] = glm::vec3(-0.5, 1.0, -0.5);
-
-	verts[20] = glm::vec3(0.5, 0, 0.5);
-	verts[21] = glm::vec3(0.5, 0, -0.5);
-	verts[22] = glm::vec3(0.5, 1.0, -0.5);
-	verts[23] = glm::vec3(0.5, 1.0, 0.5);
-
-	for (int i = 0; i < 4; i++)
-		norms[i] = glm::vec3(0, 0, 1);//front
-
-	for (int i = 4; i < 8; i++)
-		norms[i] = glm::vec3(0, -1, 0);//left
-
-	for (int i = 8; i < 12; i++)
-		norms[i] = glm::vec3(-1, 0, 0);
-
-	for (int i = 12; i < 16; i++)
-		norms[i] = glm::vec3(0, 1, 0);
-
-	for (int i = 16; i < 20; i++)
-		norms[i] = glm::vec3(0, 0, -1);
-
-	for (int i = 20; i < 24; i++)
-		norms[i] = glm::vec3(1, 0, 0);
-
-	glGenBuffers(1, &vertbId);
-	glBindBuffer(GL_ARRAY_BUFFER, vertbId);
-	glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(glm::vec3), &verts[0], GL_STATIC_DRAW);
-
-	glGenBuffers(1, &normbId);
-	glBindBuffer(GL_ARRAY_BUFFER, normbId);
-	glBufferData(GL_ARRAY_BUFFER, norms.size() * sizeof(glm::vec3), &norms[0], GL_STATIC_DRAW);
-
-}
-
-
-void initObj(
-	GLuint& vertbId,
-	std::vector<glm::vec3>& verts,
-	GLuint& normbId,
-	std::vector<glm::vec3>& norms,
-	GLuint& uvbId,
-	std::vector<glm::vec2>& uvs)
-{	
-	loadOBJ("suzanne.obj", verts, uvs, norms);
-
-	glGenBuffers(1, &vertbId);
-	glBindBuffer(GL_ARRAY_BUFFER, vertbId);
-	glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(glm::vec3), &verts[0], GL_STATIC_DRAW);
-
-	glGenBuffers(1, &uvbId);
-	glBindBuffer(GL_ARRAY_BUFFER, uvbId);
-	glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(glm::vec2), &uvs[0], GL_STATIC_DRAW);
-
-
-	glGenBuffers(1, &normbId);
-	glBindBuffer(GL_ARRAY_BUFFER, normbId);
-	glBufferData(GL_ARRAY_BUFFER, norms.size() * sizeof(glm::vec3), &norms[0], GL_STATIC_DRAW);
-}
-
-void drawObj(
-	GLuint vertb,
-	GLuint normb,
-	GLuint uvb,
-	GLuint trans,
-	GLuint Texture,
-	GLuint TextureID,
-	int numv)
+struct Mesh
 {
-	// Bind our texture in Texture Unit 0
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, Texture);
-	// Set our "myTextureSampler" sampler to use Texture Unit 0
-	glUniform1i(TextureID, 0);
+	GLuint vertbId = 0;
+	std::vector<glm::vec3> verts;
+	GLuint normbId = 0;
+	std::vector<glm::vec3> norms;
+	GLuint uvbId = 0;
+	std::vector<glm::vec2> uvs;
+	glm::mat4 ViewMatrix;
+	glm::mat4 ModelMatrix;
+	glm::mat4 MVP;
+	std::vector<Shader> ShaderPasses;
+	GLuint Texture = 0;
+	GLuint VertexArrayID = 0;
+};
 
-	// 1rst attribute buffer : vertices
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, vertb);
-	glVertexAttribPointer(
-		0,                  // attribute
-		3,                  // size
-		GL_FLOAT,           // type
-		GL_FALSE,           // normalized?
-		0,                  // stride
-		(void*)0            // array buffer offset
-	);
+Shader loadShaderPass(const std::string& vert, const std::string& frag)
+{
+	Shader shaderPass;
 
-	// 2nd attribute buffer : UVs
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, uvb);
-	glVertexAttribPointer(
-		1,                                // attribute
-		2,                                // size
-		GL_FLOAT,                         // type
-		GL_FALSE,                         // normalized?
-		0,                                // stride
-		(void*)0                          // array buffer offset
-	);
+	shaderPass.Name = vert;
 
-	// 3rd attribute buffer : normals
-	glEnableVertexAttribArray(2);
-	glBindBuffer(GL_ARRAY_BUFFER, normb);
-	glVertexAttribPointer(
-		2,                                // attribute
-		3,                                // size
-		GL_FLOAT,                         // type
-		GL_FALSE,                         // normalized?
-		0,                                // stride
-		(void*)0                          // array buffer offset
-	);
+	shaderPass.ID = LoadShaders(vert.c_str(), frag.c_str());
 
-	glDrawArrays(GL_TRIANGLES, 0, numv);
+	/*glGenVertexArrays(1, &shaderPass.VertexArrayID);*/
 
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-	glDisableVertexAttribArray(2);
-	glDisableVertexAttribArray(3);
+	shaderPass.MatrixID = glGetUniformLocation(shaderPass.ID, "MVP");
+	shaderPass.ViewMatrixID = glGetUniformLocation(shaderPass.ID, "V");
+	shaderPass.ModelMatrixID = glGetUniformLocation(shaderPass.ID, "M");
+	shaderPass.LightID = glGetUniformLocation(shaderPass.ID, "LightPosition_worldspace");
+	shaderPass.DepthTextureID = glGetUniformLocation(shaderPass.ID, "depthTexture");
+
+
+	// VERTS
+	shaderPass.in_PositionLocation = glGetAttribLocation(shaderPass.ID, "vertexPosition_modelspace");
+	glEnableVertexAttribArray(shaderPass.in_PositionLocation);
+	glVertexAttribPointer(shaderPass.in_PositionLocation, 3, GL_FLOAT, GL_FALSE, 0, 0); // Set up the vertex attributes pointer
+
+	// UVS
+	shaderPass.in_UVLocation = glGetAttribLocation(shaderPass.ID, "vertexUV");
+	glEnableVertexAttribArray(shaderPass.in_UVLocation);
+	glVertexAttribPointer(shaderPass.in_UVLocation, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// NORMS
+	shaderPass.in_NormalLocation = glGetAttribLocation(shaderPass.ID, "vertexNormal_modelspace");
+	glEnableVertexAttribArray(shaderPass.in_NormalLocation);
+	glVertexAttribPointer(shaderPass.in_NormalLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	return shaderPass;
 }
 
+// Bind the shader
+//void bindShader(GLuint shaderID)
+//{
+//	glUseProgram(shaderID);
+//}
+//
+//// Unbind the shader
+//void unbindShader()
+//{
+//	glUseProgram(0);
+//}
 
-void drawCube(
-	GLuint vertb,
-	GLuint normb,
-	GLuint trans,
-	GLuint TextureID,
-	int numv)
+static const GLenum FrameBuffers[] = {
+	GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT
+};
+
+void initFrameBuffer()
 {
 
-	// 1rst attribute buffer : vertices
-	//glm::mat4 translation = glm::translate(translation, glm::vec3(0.0f, 0.0f, 5.0));
-	//glUniformMatrix4fv(trans, 1, GL_FALSE, &translation[0][0]);
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, vertb);
-	glVertexAttribPointer(
-		0,                  // attribute
-		3,                  // size
-		GL_FLOAT,           // type
-		GL_FALSE,           // normalized?
-		0,                  // stride
-		(void*)0            // array buffer offset
-	);
+	// create a RGBA color texture
+	glGenTextures(1, &ColorTextureID);
+	glBindTexture(GL_TEXTURE_2D, ColorTextureID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+		SCREEN_WIDTH, SCREEN_HEIGHT,
+		0, GL_RGBA, GL_UNSIGNED_BYTE,
+		NULL);
 
-	 //2nd attribute buffer : UVs
-	//glEnableVertexAttribArray(1);
-	//glBindBuffer(GL_ARRAY_BUFFER, uvb);
-	//glVertexAttribPointer(
-	//	1,                                // attribute
-	//	2,                                // size
-	//	GL_FLOAT,                         // type
-	//	GL_FALSE,                         // normalized?
-	//	0,                                // stride
-	//	(void*)0                          // array buffer offset
-	//);
+	// create a depth texture
+	glGenTextures(1, &DepthTextureID);
+	glBindTexture(GL_TEXTURE_2D, DepthTextureID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+		SCREEN_WIDTH, SCREEN_HEIGHT,
+		0, GL_DEPTH_COMPONENT, GL_FLOAT,
+		NULL);
 
-	// 3rd attribute buffer : normals
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, normb);
-	glVertexAttribPointer(
-		1,                                // attribute
-		3,                                // size
-		GL_FLOAT,                         // type
-		GL_FALSE,                         // normalized?
-		0,                                // stride
-		(void*)0                          // array buffer offset
-	);
+	//create the framebuffer object
+	glGenFramebuffers(1, &FrameBufferID);
+	glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);
 
-	// Draw the triangles !
+	// attach color
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ColorTextureID, 0);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, DepthTextureID, 0);
 
-	glDrawArrays(GL_TRIANGLES, 0, numv);
-
-			glDisableVertexAttribArray(0);
-		glDisableVertexAttribArray(1);
-		glDisableVertexAttribArray(2);
-		glDisableVertexAttribArray(3);
+	// reset FBO
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+void initCube(Mesh& mesh)
+{
+	//model.verts = std::vector<glm::vec3>(24);
+	mesh.norms = std::vector<glm::vec3>(36);
+
+	float x = 0.f;
+	float y = 0.f;
+	float z = 0.f;
+	float sx = 1.f;
+	float sy = 1.f;
+	float sz = 1.f;
+
+	float edgeLenght = 1.f;
+	float halfLenght = edgeLenght / 2;
+
+	// FRONT facet
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, halfLenght));
+	for (int i = 0; i < 6; i++) mesh.norms[i] = glm::vec3(0, 0, 1);
+
+	// RIGHT facet
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, halfLenght));
+	for (int i = 6; i < 12; i++) mesh.norms[i] = glm::vec3(1, 0, 0);
+
+	// BACK facet
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, halfLenght, -halfLenght));
+	for (int i = 12; i < 18; i++) mesh.norms[i] = glm::vec3(0, 0, 1);
+
+	// LEFT facet
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, halfLenght, -halfLenght));
+	for (int i = 18; i < 24; i++) mesh.norms[i] = glm::vec3(1, 0, 0);
+
+	// TOP facet
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, halfLenght, -halfLenght));
+	for (int i = 24; i < 30; i++) mesh.norms[i] = glm::vec3(0, 1, 0);
+
+	// BOTTOM facet
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, -halfLenght));
+	mesh.verts.push_back(glm::vec3(-halfLenght, -halfLenght, halfLenght));
+	mesh.verts.push_back(glm::vec3(halfLenght, -halfLenght, halfLenght));
+	for (int i = 30; i < 36; i++) mesh.norms[i] = glm::vec3(0, 1, 0);
+
+	glGenVertexArrays(1, &mesh.VertexArrayID);
+	glGenBuffers(1, &mesh.vertbId);
+	glGenBuffers(1, &mesh.normbId);
+
+	/*glBindVertexArray(mesh.VertexArrayID);*/
+
+	// Get a handle for our "MVP" uniform
+	// Get a handle for our "MVP" uniform
+	mesh.ShaderPasses.push_back(loadShaderPass("shader.vert", "shader.frag"));
+	mesh.Texture = loadDDS("uvmap.DDS");
+
+	// VERTS
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
+	glBufferData(GL_ARRAY_BUFFER, mesh.verts.size() * sizeof(glm::vec3), mesh.verts.data(), GL_STATIC_DRAW);
+
+	// UVS
+	//glBindBuffer(GL_ARRAY_BUFFER, mesh.uvbId);
+	//glBufferData(GL_ARRAY_BUFFER, mesh.uvs.size() * sizeof(glm::vec3), mesh.uvs.data(), GL_STATIC_DRAW);
+
+	// NORMS
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
+	glBufferData(GL_ARRAY_BUFFER, mesh.norms.size() * sizeof(glm::vec3), mesh.norms.data(), GL_STATIC_DRAW);
+}
+
+
+void initObj(Mesh& mesh)
+{
+	loadOBJ("suzanne.obj", mesh.verts, mesh.uvs, mesh.norms);
+
+	glGenVertexArrays(1, &mesh.VertexArrayID);
+	glGenBuffers(1, &mesh.normbId);
+	glGenBuffers(1, &mesh.vertbId);
+	glGenBuffers(1, &mesh.uvbId);
+
+	// Get a handle for our "MVP" uniform
+	mesh.ShaderPasses.push_back(loadShaderPass("silhouette.vert", "silhouette.frag"));
+	mesh.ShaderPasses.push_back(loadShaderPass("silhouette2.vert", "silhouette2.frag"));
+	mesh.Texture = loadDDS("uvmap.DDS");
+
+	// VERTS
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
+	glBufferData(GL_ARRAY_BUFFER, mesh.verts.size() * sizeof(glm::vec3), mesh.verts.data(), GL_STATIC_DRAW);
+
+	// UVS
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.uvbId);
+	glBufferData(GL_ARRAY_BUFFER, mesh.uvs.size() * sizeof(glm::vec2), mesh.uvs.data(), GL_STATIC_DRAW);
+
+	// NORMS
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
+	glBufferData(GL_ARRAY_BUFFER, mesh.norms.size() * sizeof(glm::vec3), mesh.norms.data(), GL_STATIC_DRAW);
+}
+
+void draw(const Mesh& mesh)
+{
+	//glEnable(GL_DEPTH_TEST);
+	//glDepthFunc(GL_LESS);
+	//glDrawBuffer(GL_FRONT);	
+
+	//glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);
+
+	for (auto shader = mesh.ShaderPasses.begin(); shader != mesh.ShaderPasses.end(); shader++)
+	{
+		glUseProgram(shader->ID);
+
+
+		glBindVertexArray(mesh.VertexArrayID);
+
+		glUniform3f(shader->LightID, LightPos.x, LightPos.y, LightPos.z);
+		glUniformMatrix4fv(shader->MatrixID, 1, GL_FALSE, &mesh.MVP[0][0]);
+		glUniformMatrix4fv(shader->ViewMatrixID, 1, GL_FALSE, &mesh.ViewMatrix[0][0]);
+		glUniformMatrix4fv(shader->ModelMatrixID, 1, GL_FALSE, &mesh.ModelMatrix[0][0]);
+
+
+		// 1rst attribute buffer : vertices		
+		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, mesh.vertbId);
+		glVertexAttribPointer(
+			0,                  // attribute
+			3,                  // size
+			GL_FLOAT,           // type
+			GL_FALSE,           // normalized?
+			0,                  // stride
+			(void*)0            // array buffer offset
+		);
+
+		// 2nd attribute buffer : UVs
+		//glDisableVertexArrayAttrib(mesh.VertexArrayID, 1);
+		glEnableVertexAttribArray(1);
+		glBindBuffer(GL_ARRAY_BUFFER, mesh.uvbId);
+		glVertexAttribPointer(
+			1,                                // attribute
+			2,                                // size
+			GL_FLOAT,                         // type
+			GL_FALSE,                         // normalized?
+			0,                                // stride
+			(void*)0                          // array buffer offset
+		);
+
+		// 3rd attribute buffer : normals
+		//glDisableVertexArrayAttrib(mesh.VertexArrayID, 0);
+		glEnableVertexAttribArray(2);
+		glBindBuffer(GL_ARRAY_BUFFER, mesh.normbId);
+		glVertexAttribPointer(
+			2,                                // attribute
+			3,                                // size
+			GL_FLOAT,                         // type
+			GL_FALSE,                         // normalized?
+			0,                                // stride
+			(void*)0                          // array buffer offset
+		);
+
+		glDrawArrays(GL_TRIANGLES, 0, mesh.verts.size());
+
+		glBindVertexArray(0);
+		glUseProgram(0);// unbind shader
+		glFlush();
+	}
+}
+
+
+void destroy(const Mesh& mesh)
+{
+	if (mesh.vertbId > 0) glDeleteBuffers(1, &mesh.vertbId);
+	if (mesh.uvbId > 0) glDeleteBuffers(1, &mesh.uvbId);
+	if (mesh.normbId > 0) glDeleteBuffers(1, &mesh.normbId);
+
+	for (auto shader = mesh.ShaderPasses.begin(); shader != mesh.ShaderPasses.end(); shader++)
+	{
+		if (shader->ID > 0) glDeleteProgram(shader->ID);
+		if (mesh.VertexArrayID > 0)glDeleteVertexArrays(1, &mesh.VertexArrayID);
+	}
+
+	if (mesh.Texture > 0) glDeleteTextures(1, &mesh.Texture);
+	//if (shader.VertexArrayID > 0)glDeleteVertexArrays(1, &shader.VertexArrayID);
+}
+
+
+Mesh cube;
+Mesh obj;
+
+void render(void)
+{
+	//glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);
+	// set up render target
+
+	//// Clear the screen	  
+	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	/*glBindFramebuffer(GL_FRAMEBUFFER, 0);*/
+	//glDrawBuffers(sizeof FrameBuffers / sizeof FrameBuffers[0], FrameBuffers);
+
+	computeMatricesFromInputs();
+	glm::mat4 ProjectionMatrix = getProjectionMatrix();
+
+	cube.ViewMatrix = getViewMatrix();
+	cube.ModelMatrix = glm::mat4(1.0);
+	cube.ModelMatrix = translate(cube.ModelMatrix, glm::vec3(0, 0, 2));
+	cube.MVP = ProjectionMatrix * cube.ViewMatrix * cube.ModelMatrix;
+	draw(cube);
+
+	obj.ViewMatrix = getViewMatrix();
+	obj.ModelMatrix = glm::mat4(1.0);
+	obj.ModelMatrix = translate(obj.ModelMatrix, glm::vec3(0, 0, 0));
+	obj.MVP = ProjectionMatrix * obj.ViewMatrix * obj.ModelMatrix;
+	draw(obj);
+
+
+	//glDrawBuffer(GL_NONE);
+
+	// Swap buffers
+
+	glfwSwapBuffers(window);
+	glfwPollEvents();
+}
 
 
 
@@ -249,8 +410,9 @@ int main(void)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Open a window and create its OpenGL context
-	window = glfwCreateWindow(1024, 768, "Tutorial 08 - Basic Shading", NULL, NULL);
-	if (window == NULL) {
+	window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Hidden Silhouette Shader", NULL, NULL);
+	if (window == NULL)
+	{
 		fprintf(stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n");
 		getchar();
 		glfwTerminate();
@@ -260,7 +422,8 @@ int main(void)
 
 	// Initialize GLEW
 	glewExperimental = true; // Needed for core profile
-	if (glewInit() != GLEW_OK) {
+	if (glewInit() != GLEW_OK)
+	{
 		fprintf(stderr, "Failed to initialize GLEW\n");
 		getchar();
 		glfwTerminate();
@@ -274,130 +437,37 @@ int main(void)
 
 	// Set the mouse at the center of the screen
 	glfwPollEvents();
-	glfwSetCursorPos(window, 1024 / 2, 768 / 2);
+	glfwSetCursorPos(window, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
 
 	// Dark blue background
 	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 
 	// Enable depth test
-	glEnable(GL_DEPTH_TEST);
-	// Accept fragment if it closer to the camera than the former one
-	glDepthFunc(GL_LESS);
+	//glEnable(GL_DEPTH_TEST);	
+	//glDepthFunc(GL_LESS);
 
-	// Cull triangles which normal is not towards the camera
-	glEnable(GL_CULL_FACE);
+	//////////////////////////// TODO
+	//////////////////////////// TODO
+	//////////////////////////// TODO
+	//////////////////////////// TODO
+	//////////////////////////// TODO
+	//glEnable(GL_CULL_FACE);
 
-	GLuint VertexArrayID;
-	glGenVertexArrays(1, &VertexArrayID);
-	glBindVertexArray(VertexArrayID);
+	initFrameBuffer();
 
-	// Create and compile our GLSL program from the shaders
-	GLuint programID = LoadShaders("StandardShading.vert", "StandardShading.frag");
+	// Init meshes
+	initObj(obj);
+	initCube(cube);
 
-	// Get a handle for our "MVP" uniform
-	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
-	GLuint ViewMatrixID = glGetUniformLocation(programID, "V");
-	GLuint ModelMatrixID = glGetUniformLocation(programID, "M");
-	GLuint trans = glGetUniformLocation(programID, "trans");
-	GLuint Texture = loadDDS("uvmap.DDS");
-	GLuint TextureID = glGetUniformLocation(programID, "myTextureSampler");
-
-
-	// INIT OBJ
-	// Read our .obj file
-	// Load the texture
-	std::vector<glm::vec3> objVertices;
-	std::vector<glm::vec2> objUvs;
-	std::vector<glm::vec3> objNormals;
-	GLuint objVertexBuffer;
-	GLuint objNormalbuffer;
-	GLuint objUvbuffer;
-	initObj(objVertexBuffer, objVertices, objNormalbuffer, objNormals, objUvbuffer, objUvs);
-
-
-	// INIT CUBE
-	std::vector<glm::vec3> cubeVerts(24);
-	std::vector<glm::vec3> cubeNormals(24);
-	GLuint cubeVertexBuffer;
-	GLuint cubeNormalbuffer;
-	initCube(cubeVertexBuffer, cubeVerts, cubeNormalbuffer, cubeNormals);
-
-
-	// Get a handle for our "LightPosition" uniform
-	glUseProgram(programID);
-	GLuint LightID = glGetUniformLocation(programID, "LightPosition_worldspace");
-
-	do {
-
-		// Clear the screen
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_LESS);
-
-		// Use our shader
-		glUseProgram(programID);
-
-		// Compute the MVP matrix from keyboard and mouse input
-		computeMatricesFromInputs();
-		glm::mat4 ProjectionMatrix = getProjectionMatrix();
-		glm::mat4 ViewMatrix = getViewMatrix();
-		glm::mat4 ModelMatrix = glm::mat4(1.0);
-		glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
-		glm::mat4 translation = glm::mat4(1.0f);
-
-		translation = glm::translate(translation, glm::vec3(0.0f, 0.0f, 0.0f));
-
-
-		// Send our transformation to the currently bound shader, 
-		// in the "MVP" uniform
-
-		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
-		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
-		glUniformMatrix4fv(trans, 1, GL_FALSE, &translation[0][0]);
-
-		glm::vec3 lightPos = glm::vec3(4, 4, 4);
-		glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
-
-		/*
-			GLuint vertb,
-			GLuint normb,
-			GLuint uvb,
-			GLuint trans,
-			GLuint TextureID,
-		*/
-		drawObj(
-			objVertexBuffer,
-			objNormalbuffer,
-			objUvbuffer,
-			trans,
-			Texture,
-			TextureID,
-			objVertices.size());
-
-		drawCube(
-			cubeVertexBuffer,
-			cubeNormalbuffer,
-			trans,
-			Texture,
-			cubeVerts.size());
-
-
-		// Swap buffers
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-
-	} // Check if the ESC key was pressed or the window was closed
-	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
+	do render();
+	while (
+		glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
 		glfwWindowShouldClose(window) == 0);
 
 	// Cleanup VBO and shader
-	glDeleteBuffers(1, &objVertexBuffer);
-	glDeleteBuffers(1, &objUvbuffer);
-	glDeleteBuffers(1, &objNormalbuffer);
-	glDeleteProgram(programID);
-	glDeleteTextures(1, &Texture);
-	glDeleteVertexArrays(1, &VertexArrayID);
+	glDeleteTextures(1, &DepthTextureID);
+	destroy(obj);
+	destroy(cube);
 
 	// Close OpenGL window and terminate GLFW
 	glfwTerminate();

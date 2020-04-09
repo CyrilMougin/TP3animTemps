@@ -18,7 +18,7 @@ in vec3 LightDirection_cameraspace;
 out vec3 color;
 
 // Values that stay constant for the whole mesh.
-uniform sampler2D depthTexture;
+uniform sampler2D DepthTexture;
 uniform mat4 MV;
 uniform vec3 LightPosition_worldspace;
 
@@ -32,17 +32,17 @@ void main(){
 	
 	float depth = gl_FragCoord.z;	
 
-	color = vec3(0, 1, 0);
-	return;
+//	color = vec3(0, 1, 0);
+//	return;
+////
+//	 
+//    vec3 MaterialDiffuseColor = 
+//		mod(floor(100.0f * UV.x) + floor(100.0f * UV.y), 2.0) == 0.0 ?
+//			// Yellow
+//			vec3(1, 1, 0) : 
+//			// Blue
+//			vec3(0, 0, 1);
 //
-//	// Material properties
-////    vec3 MaterialDiffuseColor = 
-////		mod(floor(100.0f * UV.x) + floor(100.0f * UV.y), 2.0) == 0.0 ?
-////			// Yellow
-////			vec3(1, 1, 0) : 
-////			// Blue
-////			vec3(0, 0, 1);
-
     vec3 MaterialDiffuseColor = vec3(0, 0, 1);
 
 	vec3 MaterialAmbientColor = vec3(0.1,0.1,0.1) * MaterialDiffuseColor;
@@ -72,7 +72,7 @@ void main(){
 	//  - Looking elsewhere -> < 1
 	float cosAlpha = clamp( dot( E,R ), 0,1 );
 	
-//	float zdepth = texture(depthTexture, UV).r;
+//	float zdepth = texture(DepthTexture, UV).r;
 //	if (zdepth >= gl_FragCoord.z) return;
 
 	color = 
