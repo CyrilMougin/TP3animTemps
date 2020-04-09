@@ -24,7 +24,7 @@ uniform mat4 MV;
 uniform vec3 LightPosition_worldspace;
 
 float near = 0.01; 
-float far  = 100f; 
+float far  = 100; 
 
 float LinearizeDepth(float depth) 
 {
@@ -33,11 +33,11 @@ float LinearizeDepth(float depth)
 }
 
 void main(){
-		
-	color.rgb = 
-		vec3(
-			LinearizeDepth(texelFetch(DepthTexture, ivec2(gl_FragCoord.xy), 0).r),
-			LinearizeDepth(texelFetch(DepthTexture, ivec2(gl_FragCoord.xy), 0).g),
-			LinearizeDepth(texelFetch(DepthTexture, ivec2(gl_FragCoord.xy), 0).b));
+	
+	// https://stackoverflow.com/questions/48091045/accessing-a-gl-depth-component-texture
+	float zdepth = LinearizeDepth(texelFetch(DepthTexture, ivec2(gl_FragCoord.xy), 0).r);
+	float z = LinearizeDepth(gl_FragCoord.z);
+	if (zdepth > z - .05) discard;
+	else color = vec4(1, 0, 0, 0);			
 }
   

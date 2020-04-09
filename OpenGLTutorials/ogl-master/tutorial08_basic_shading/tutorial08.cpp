@@ -356,7 +356,7 @@ void render(void)
 
 	// Draw to screen
 	
-	// Bind to invisible frame buffer to draw shadows
+	// Bind to invisible frame buffer to draw to depthtexture
 	glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferID);	
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
@@ -364,7 +364,6 @@ void render(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 	draw(cube, DefaultShader);
-	draw(obj, DefaultShader);
 
 	// Bind to default fbuf:
 	// Draw to screen using depthTexture as information to draw the silhouette
